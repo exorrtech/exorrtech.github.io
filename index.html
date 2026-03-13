@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXORR — The Void Secures</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #000000;
+      --deep: #020202;
+      --surface: #060606;
+      --border: #0f0f0f;
+      --border-mid: #181818;
+      --border-light: #242424;
+      --dim: #2a2a2a;
+      --muted: #3a3a3a;
+      --body: #606060;
+      --secondary: #909090;
+      --primary: #c0c0c0;
+      --white: #e8e8e8;
+      --pure: #f5f5f5;
+      --green: #00ff41;
+      --green-dim: #00cc33;
+      --green-ghost: rgba(0,255,65,0.03);
+      --green-glow: rgba(0,255,65,0.15);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--void);
+      color: var(--body);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      cursor: none;
+    }
+    .cursor {
+      position: fixed; width: 4px; height: 4px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 10000;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 8px 2px var(--green-glow);
+      transition: transform 0.05s;
+    }
+    .cursor-ring {
+      position: fixed; width: 32px; height: 32px;
+      border: 1px solid rgba(0,255,65,0.25); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: width 0.3s, height 0.3s, border-color 0.3s;
+    }
+    .noise {
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.022; pointer-events: none; z-index: 1;
+    }
+    #void-canvas { position: fixed; inset: 0; z-index: 0; }
+    .layer { position: relative; z-index: 10; }
+
+    /* NAV */
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 48px;
+      height: 72px; display: flex; align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.92); backdrop-filter: blur(40px);
+      border-bottom: 1px solid var(--border-mid);
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+      letter-spacing: 10px; color: var(--pure); text-decoration: none;
+    }
+    .logo-dot {
+      display: inline-block; width: 5px; height: 5px;
+      background: var(--green); border-radius: 50%;
+      margin-left: 3px; vertical-align: middle;
+      animation: breathe 3s ease infinite;
+      box-shadow: 0 0 8px var(--green);
+    }
+    @keyframes breathe {
+      0%,100% { opacity:1; box-shadow: 0 0 8px var(--green); }
+      50% { opacity:0.2; box-shadow: 0 0 2px var(--green); }
+    }
+    .nav-center {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 4px; color: var(--muted); text-transform: uppercase;
+    }
+    .nav-right { display: flex; align-items: center; gap: 32px; }
+    .nav-link {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 3px; color: var(--muted); text-decoration: none;
+      text-transform: uppercase; transition: color 0.3s;
+    }
+    .nav-link:hover { color: var(--green); }
+    .nav-cta {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 3px; color: var(--green); text-decoration: none;
+      text-transform: uppercase; border: 1px solid rgba(0,255,65,0.3);
+      padding: 10px 20px; transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .nav-cta::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--green-ghost);
+      transform: translateX(-100%); transition: transform 0.3s;
+    }
+    .nav-cta:hover::before { transform: translateX(0); }
+    .nav-cta:hover { border-color: var(--green); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center;
+      padding-top: 72px; position: relative; overflow: hidden;
+    }
+    .hero-bg-text {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(180px, 32vw, 480px);
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(0,255,65,0.035);
+      letter-spacing: 20px; pointer-events: none;
+      user-select: none; z-index: 1;
+    }
+    .hero-content {
+      position: relative; z-index: 5;
+      max-width: 1200px; margin: 0 auto; padding: 0 48px;
+      width: 100%; display: grid;
+      grid-template-columns: 1.1fr 0.9fr; gap: 80px;
+      align-items: center; min-height: calc(100vh - 72px);
+    }
+    .hero-left { padding: 80px 0; }
+    .hero-tag {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 5px; color: var(--green); text-transform: uppercase;
+      margin-bottom: 40px; display: flex; align-items: center; gap: 16px;
+      opacity: 0; animation: fadeUp 1s ease 0.2s forwards;
+    }
+    .hero-tag::before { content: ''; width: 32px; height: 1px; background: var(--green); }
+    .hero-title-wrap {
+      margin-bottom: 48px;
+      opacity: 0; animation: fadeUp 1s ease 0.4s forwards;
+    }
+    .title-exorr {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(88px, 15vw, 180px);
+      color: var(--pure); letter-spacing: 8px;
+      line-height: 0.85; display: block;
+    }
+    .title-null {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(88px, 15vw, 180px);
+      color: transparent;
+      -webkit-text-stroke: 1px var(--border-light);
+      letter-spacing: 8px; line-height: 0.85; display: block;
+    }
+    .title-sub {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(18px, 3vw, 32px);
+      color: var(--muted); letter-spacing: 16px;
+      display: block; margin-top: 20px;
+    }
+    .hero-desc {
+      font-size: 18px; font-style: italic;
+      color: var(--body); line-height: 1.9; margin-bottom: 48px;
+      opacity: 0; animation: fadeUp 1s ease 0.6s forwards;
+    }
+    .hero-desc strong { color: var(--secondary); font-style: normal; font-weight: 400; }
+    .hero-btns {
+      display: flex; gap: 16px;
+      opacity: 0; animation: fadeUp 1s ease 0.8s forwards;
+    }
+    .btn {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 3px; text-transform: uppercase;
+      text-decoration: none; padding: 16px 32px; transition: all 0.3s;
+    }
+    .btn-g { background: var(--green); color: var(--void); font-weight: 700; }
+    .btn-g:hover { background: var(--pure); box-shadow: 0 0 40px rgba(0,255,65,0.15); }
+    .btn-o { border: 1px solid var(--border-light); color: var(--muted); }
+    .btn-o:hover { border-color: var(--green); color: var(--green); }
+
+    /* HERO RIGHT */
+    .hero-right { opacity: 0; animation: fadeRight 1.2s ease 0.6s forwards; }
+    .terminal {
+      border: 1px solid var(--border-mid);
+      background: rgba(4,4,4,0.9); backdrop-filter: blur(20px);
+    }
+    .terminal-bar {
+      padding: 16px 20px; border-bottom: 1px solid var(--border-mid);
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(8,8,8,0.8);
+    }
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .t-r { background: #ff3b30; }
+    .t-y { background: #ffcc00; }
+    .t-g { background: var(--green); animation: breathe 2s infinite; box-shadow: 0 0 6px var(--green); }
+    .t-title {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 2px; color: var(--muted); margin-left: 8px;
+    }
+    .terminal-body { padding: 8px 0; }
+    .t-row {
+      padding: 14px 24px; display: flex;
+      justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); transition: background 0.2s;
+    }
+    .t-row:last-child { border-bottom: none; }
+    .t-row:hover { background: var(--green-ghost); }
+    .t-label {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 2px; color: var(--muted); text-transform: uppercase;
+    }
+    .t-val { font-family: 'Space Mono', monospace; font-size: 10px; }
+    .t-val.g { color: var(--green); }
+    .t-val.w { color: var(--secondary); }
+    .t-val.d { color: var(--muted); }
+    .t-bar { width: 72px; height: 1px; background: var(--border-mid); position: relative; overflow: hidden; }
+    .t-bar-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: linear-gradient(90deg, var(--green-dim), var(--green));
+      animation: growBar 2s ease forwards;
+    }
+    @keyframes growBar { from { width: 0; } }
+
+    /* DIVIDER */
+    .v-divider {
+      height: 1px; margin: 0 48px;
+      background: linear-gradient(90deg, transparent, var(--border-mid) 30%, var(--border-mid) 70%, transparent);
+      position: relative;
+    }
+    .v-divider[data-label]::after {
+      content: attr(data-label);
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 5px; color: var(--muted); text-transform: uppercase;
+      background: var(--void); padding: 0 24px;
+    }
+
+    /* SECTION WRAPPER */
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+
+    /* PHILOSOPHY */
+    .philosophy { padding: 160px 0; position: relative; }
+    .philo-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(0,255,65,0.015) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .philo-inner {
+      display: grid; grid-template-columns: 200px 1fr; gap: 100px; align-items: start;
+    }
+    .philo-left {}
+    .philo-tag {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 4px; color: var(--green); text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .philo-symbol {
+      font-family: 'Bebas Neue', sans-serif; font-size: 140px;
+      color: transparent; -webkit-text-stroke: 1px var(--border-mid);
+      line-height: 1; letter-spacing: 4px;
+    }
+    .philo-quote {
+      font-size: clamp(26px, 3.5vw, 44px); font-weight: 300; font-style: italic;
+      color: var(--secondary); line-height: 1.45; margin-bottom: 36px;
+    }
+    .philo-quote em { color: var(--pure); font-style: normal; }
+    .philo-body { font-size: 16px; color: var(--body); line-height: 2; max-width: 560px; }
+    .philo-body p { margin-bottom: 20px; }
+    .philo-body strong { color: var(--secondary); font-weight: 400; }
+
+    /* SERVICES */
+    .services { padding: 160px 0; }
+    .sec-head {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-bottom: 64px;
+    }
+    .big-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 8vw, 96px);
+      color: var(--pure); letter-spacing: 6px; line-height: 0.9;
+    }
+    .big-title .ghost {
+      color: transparent; -webkit-text-stroke: 1px var(--border-light);
+      display: block;
+    }
+    .sec-desc {
+      max-width: 300px; font-size: 14px; font-style: italic;
+      color: var(--muted); line-height: 1.8; text-align: right;
+    }
+    .svc-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      border: 1px solid var(--border-mid);
+      border-right: none; border-bottom: none;
+    }
+    .svc-card {
+      border-right: 1px solid var(--border-mid);
+      border-bottom: 1px solid var(--border-mid);
+      padding: 52px 44px; position: relative; overflow: hidden;
+      transition: background 0.4s;
+    }
+    .svc-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      transform: scaleX(0); transition: transform 0.5s;
+    }
+    .svc-card:hover::after { transform: scaleX(1); }
+    .svc-card:hover { background: rgba(0,255,65,0.008); }
+    .svc-num {
+      font-family: 'Bebas Neue', sans-serif; font-size: 72px;
+      color: transparent; -webkit-text-stroke: 1px var(--border-mid);
+      line-height: 1; margin-bottom: 28px; letter-spacing: 4px;
+      transition: -webkit-text-stroke-color 0.4s;
+    }
+    .svc-card:hover .svc-num { -webkit-text-stroke-color: rgba(0,255,65,0.12); }
+    .svc-tag {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 4px; color: var(--green); text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .svc-name {
+      font-family: 'Cormorant Garamond', serif; font-size: 26px;
+      font-weight: 300; color: var(--pure); line-height: 1.2; margin-bottom: 8px;
+    }
+    .svc-price-wrap {
+      margin: 24px 0; padding: 20px 0;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .svc-price {
+      font-family: 'Bebas Neue', sans-serif; font-size: 44px;
+      color: var(--pure); letter-spacing: 3px; line-height: 1;
+    }
+    .svc-price .cur { font-size: 22px; color: var(--green); vertical-align: super; }
+    .svc-price .per {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--muted); letter-spacing: 2px;
+    }
+    .svc-desc {
+      font-size: 15px; font-style: italic; color: var(--body);
+      line-height: 1.8; margin-bottom: 28px;
+    }
+    .svc-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .svc-list li {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 1px;
+      display: flex; gap: 14px; align-items: flex-start; transition: color 0.2s;
+    }
+    .svc-card:hover .svc-list li { color: var(--body); }
+    .svc-list li::before { content: '—'; color: var(--green); flex-shrink: 0; }
+
+    /* FINDINGS */
+    .findings { padding: 0 0 160px; }
+    .ftable { border: 1px solid var(--border-mid); }
+    .fth {
+      display: grid; grid-template-columns: 110px 1fr 180px 150px;
+      padding: 16px 32px; border-bottom: 1px solid var(--border-mid);
+      background: var(--surface);
+    }
+    .fth span {
+      font-family: 'Space Mono', monospace; font-size: 8px;
+      letter-spacing: 3px; color: var(--muted); text-transform: uppercase;
+    }
+    .frow {
+      display: grid; grid-template-columns: 110px 1fr 180px 150px;
+      padding: 28px 32px; border-bottom: 1px solid var(--border);
+      align-items: center; transition: background 0.2s;
+    }
+    .frow:last-child { border-bottom: none; }
+    .frow:hover { background: var(--green-ghost); }
+    .badge {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 2px; padding: 4px 10px; display: inline-block;
+    }
+    .b-crit { background: rgba(255,51,51,0.08); color: #ff6666; border: 1px solid rgba(255,51,51,0.18); }
+    .b-high { background: rgba(255,136,0,0.08); color: #ffaa55; border: 1px solid rgba(255,136,0,0.18); }
+    .fname { font-size: 14px; font-style: italic; color: var(--body); }
+    .fname strong { font-style: normal; color: var(--primary); font-weight: 400; display: block; margin-bottom: 4px; }
+    .fvec { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+    .fres { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--green); letter-spacing: 1px; text-align: right; }
+
+    /* CREDS */
+    .creds { padding: 0 0 160px; }
+    .creds-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 1px; background: var(--border-mid);
+      border: 1px solid var(--border-mid);
+    }
+    .cred-card {
+      background: var(--void); padding: 48px 40px;
+      position: relative; overflow: hidden; transition: background 0.3s;
+    }
+    .cred-card::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      transform: scaleX(0); transition: transform 0.4s;
+    }
+    .cred-card:hover::after { transform: scaleX(1); }
+    .cred-card:hover { background: var(--surface); }
+    .cred-org {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 4px; color: var(--green); text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .cred-acr {
+      font-family: 'Bebas Neue', sans-serif; font-size: 52px;
+      color: var(--pure); letter-spacing: 6px; line-height: 1; margin-bottom: 12px;
+    }
+    .cred-full { font-size: 13px; font-style: italic; color: var(--muted); line-height: 1.6; }
+
+    /* CONTACT */
+    .contact {
+      padding: 160px 0; position: relative;
+      border-top: 1px solid var(--border-mid); overflow: hidden;
+    }
+    .contact-glow {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 50%, rgba(0,255,65,0.025) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 50%, rgba(0,255,65,0.012) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .contact-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: center;
+    }
+    .contact-pre {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 5px; color: var(--green); text-transform: uppercase;
+      margin-bottom: 32px; display: flex; align-items: center; gap: 16px;
+    }
+    .contact-pre::before { content: ''; width: 24px; height: 1px; background: var(--green); }
+    .contact-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(60px, 10vw, 112px);
+      line-height: 0.85; letter-spacing: 4px; margin-bottom: 48px;
+    }
+    .ct1 { color: var(--pure); display: block; }
+    .ct2 { color: transparent; -webkit-text-stroke: 1px var(--border-light); display: block; }
+    .ct3 { color: var(--green); display: block; }
+    .contact-text {
+      font-size: 17px; font-style: italic; color: var(--body);
+      line-height: 1.9; margin-bottom: 48px;
+    }
+    .contact-text strong { color: var(--secondary); font-style: normal; font-weight: 400; }
+    .email-link { display: inline-flex; align-items: center; gap: 16px; text-decoration: none; }
+    .email-addr {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: var(--green); letter-spacing: 2px;
+      border-bottom: 1px solid rgba(0,255,65,0.3); padding-bottom: 4px;
+      transition: all 0.3s;
+    }
+    .email-link:hover .email-addr { color: var(--pure); border-color: var(--pure); }
+    .email-arr { font-size: 18px; color: var(--green); transition: transform 0.3s; }
+    .email-link:hover .email-arr { transform: translateX(8px); }
+    .contact-table { display: flex; flex-direction: column; gap: 1px; background: var(--border-mid); border: 1px solid var(--border-mid); }
+    .ct-row {
+      background: var(--void); padding: 22px 28px;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background 0.2s;
+    }
+    .ct-row:hover { background: var(--green-ghost); }
+    .ct-lbl {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 3px; color: var(--muted); text-transform: uppercase;
+    }
+    .ct-val { font-family: 'Space Mono', monospace; font-size: 10px; }
+    .ct-val.g { color: var(--green); }
+    .ct-val.w { color: var(--secondary); }
+    .s-dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 6px var(--green);
+      animation: breathe 2s infinite; margin-right: 8px;
+    }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 40px 0; }
+    .foot-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 48px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .foot-logo { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 8px; color: var(--dim); }
+    .foot-phrase { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-style: italic; color: var(--muted); }
+    .foot-copy { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(24px); }
+      to { opacity:1; transform: translateY(0); }
+    }
+    @keyframes fadeRight {
+      from { opacity:0; transform: translateX(20px); }
+      to { opacity:1; transform: translateX(0); }
+    }
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.9s ease, transform 0.9s ease;
+    }
+    .reveal.visible { opacity:1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.1s; }
+    .reveal-d2 { transition-delay: 0.2s; }
+    .reveal-d3 { transition-delay: 0.3s; }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .hero-content { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .philo-inner { grid-template-columns: 1fr; gap: 40px; }
+      .svc-grid { grid-template-columns: 1fr; }
+      .fth, .frow { grid-template-columns: 90px 1fr 100px; }
+      .fres { display: none; }
+      .creds-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; gap: 60px; }
+      .nav-center { display: none; }
+      .sec-head { flex-direction: column; gap: 24px; }
+      .sec-desc { text-align: left; }
+      .wrap { padding: 0 24px; }
+      .v-divider { margin: 0 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cur"></div>
+<div class="cursor-ring" id="ring"></div>
+<div class="noise"></div>
+<canvas id="void-canvas"></canvas>
+
+<!-- NAV -->
+<nav class="layer">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">EXORR<span class="logo-dot"></span></a>
+    <div class="nav-center">Azure Security · AI Advisory · Zero Compromise</div>
+    <div class="nav-right">
+      <a href="#services" class="nav-link">Services</a>
+      <a href="#findings" class="nav-link">Findings</a>
+      <a href="#contact" class="nav-link">Contact</a>
+      <a href="mailto:contact@exorr.com" class="nav-cta">Begin</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero layer">
+  <div class="hero-bg-text">∅</div>
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="hero-tag">Azure Security & AI Advisory · Est. 2026</div>
+      <div class="hero-title-wrap">
+        <span class="title-exorr">EXORR</span>
+        <span class="title-null">NULL</span>
+        <span class="title-sub">SECURES THE VOID</span>
+      </div>
+      <p class="hero-desc">
+        The void has no surface to attack.<br>
+        <strong>We make your Azure infrastructure the same.</strong><br>
+        Fractional CISO services for companies in regulated industries who need serious security coverage — without the full-time cost.
+      </p>
+      <div class="hero-btns">
+        <a href="mailto:contact@exorr.com" class="btn btn-g">Start With A Scan</a>
+        <a href="#services" class="btn btn-o">View Services ↓</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot t-r"></div>
+          <div class="t-dot t-y"></div>
+          <div class="t-dot t-g"></div>
+          <div class="t-title">// exorr.status</div>
+        </div>
+        <div class="terminal-body">
+          <div class="t-row">
+            <span class="t-label">Status</span>
+            <span class="t-val g">● AVAILABLE</span>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Open Slots</span>
+            <span class="t-val g">2 Remaining</span>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Response</span>
+            <span class="t-val w">Within 24h</span>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Specialization</span>
+            <span class="t-val w">Azure + AI</span>
+          </div>
+          <div class="t-row">
+            <span class="t-label">AI Workloads</span>
+            <div class="t-bar"><div class="t-bar-fill" style="width:95%"></div></div>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Entra ID</span>
+            <div class="t-bar"><div class="t-bar-fill" style="width:91%;animation-delay:.3s"></div></div>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Zero Trust</span>
+            <div class="t-bar"><div class="t-bar-fill" style="width:88%;animation-delay:.6s"></div></div>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Coverage</span>
+            <span class="t-val d">US · UK · GULF</span>
+          </div>
+          <div class="t-row">
+            <span class="t-label">Entry Point</span>
+            <span class="t-val g">$1,500</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHILOSOPHY -->
+<section class="philosophy layer" id="philosophy">
+  <div class="philo-bg"></div>
+  <div class="wrap">
+    <div class="philo-inner reveal">
+      <div class="philo-left">
+        <div class="philo-tag">// Philosophy</div>
+        <div class="philo-symbol">∅</div>
+      </div>
+      <div>
+        <p class="philo-quote">
+          The void has no edge to breach.<br>
+          <em>That which cannot be found cannot be compromised.</em>
+        </p>
+        <div class="philo-body">
+          <p>
+            Most security operates on the assumption that if you build walls high enough, nothing gets through. <strong>EXORR operates differently.</strong> The most secure architecture presents nothing to attack — minimized surface, dissolved assumptions, invisible where it can be.
+          </p>
+          <p>
+            We bring this philosophy to your Azure environment. <strong>Not adding layers. Removing exposure.</strong> Not generating reports. Eliminating the conditions that make breaches possible. The void doesn't defend itself. It simply has nothing to take.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-divider layer" data-label="Services"></div>
+
+<!-- SERVICES -->
+<section class="services layer" id="services">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2 class="big-title">THREE<br><span class="ghost">VECTORS</span></h2>
+      <p class="sec-desc">From rapid exposure mapping to full ongoing coverage — structured around what you actually need.</p>
+    </div>
+    <div class="svc-grid">
+      <div class="svc-card reveal">
+        <div class="svc-num">01</div>
+        <div class="svc-tag">Entry Point</div>
+        <div class="svc-name">Azure Security Quick Scan</div>
+        <div class="svc-price-wrap">
+          <div class="svc-price"><span class="cur">$</span>1,500</div>
+        </div>
+        <p class="svc-desc">Rapid exposure mapping. Critical gaps identified, documented, and prioritized. Delivered in five business days.</p>
+        <ul class="svc-list">
+          <li>Full Azure environment review</li>
+          <li>Top 3 critical risks identified</li>
+          <li>Executive summary — readable in 3 minutes</li>
+          <li>Specific remediation roadmap</li>
+          <li>30-minute debrief call</li>
+        </ul>
+      </div>
+      <div class="svc-card reveal reveal-d1">
+        <div class="svc-num">02</div>
+        <div class="svc-tag">Full Assessment</div>
+        <div class="svc-name">Azure AI Security Audit</div>
+        <div class="svc-price-wrap">
+          <div class="svc-price"><span class="cur">$</span>5,000</div>
+        </div>
+        <p class="svc-desc">Complete security assessment including AI workload attack surfaces — the exposure most consultants don't know exists. Full attack chain documentation.</p>
+        <ul class="svc-list">
+          <li>Complete Azure environment analysis</li>
+          <li>AI workload attack surface mapping</li>
+          <li>Full attack chain documentation</li>
+          <li>Prioritized remediation roadmap</li>
+          <li>Kickoff and debrief calls</li>
+          <li>90-day follow-up included</li>
+        </ul>
+      </div>
+      <div class="svc-card reveal reveal-d2">
+        <div class="svc-num">03</div>
+        <div class="svc-tag">Ongoing Coverage</div>
+        <div class="svc-name">Fractional CISO Retainer</div>
+        <div class="svc-price-wrap">
+          <div class="svc-price"><span class="cur">$</span>5,000<span class="per"> /mo</span></div>
+        </div>
+        <p class="svc-desc">Dedicated security leadership without the full-time cost. Continuous Azure coverage, incident response, and board-level reporting.</p>
+        <ul class="svc-list">
+          <li>10–15 dedicated hours monthly</li>
+          <li>Monthly Azure security review</li>
+          <li>Incident response coverage</li>
+          <li>Board and investor reporting</li>
+          <li>Vendor security assessments</li>
+          <li>Security policy development</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-divider layer" data-label="Findings" id="findings"></div>
+
+<!-- FINDINGS -->
+<section class="findings layer">
+  <div class="wrap">
+    <div class="sec-head reveal" style="margin-bottom:40px;">
+      <h2 class="big-title" style="font-size:clamp(36px,6vw,72px);">SELECTED<br><span class="ghost">FINDINGS</span></h2>
+      <p class="sec-desc">Attack chains demonstrated on real Azure environments. Not theoretical. Executed and documented.</p>
+    </div>
+    <div class="ftable reveal">
+      <div class="fth">
+        <span>Severity</span><span>Finding</span>
+        <span>Vector</span><span style="text-align:right">Result</span>
+      </div>
+      <div class="frow">
+        <div><span class="badge b-crit">CRITICAL</span></div>
+        <div class="fname">
+          <strong>Key Vault Secret Extraction</strong>
+          Misconfigured Service Principal used to extract Key Vault secrets — full production credential exposure achieved end-to-end.
+        </div>
+        <div class="fvec">Service Principal<br>Misconfiguration</div>
+        <div class="fres">FULL CREDENTIAL<br>EXPOSURE</div>
+      </div>
+      <div class="frow">
+        <div><span class="badge b-high">HIGH</span></div>
+        <div class="fname">
+          <strong>Entra ID Privilege Escalation</strong>
+          Standard user elevated to Global Admin via PIM misconfiguration. Four-step chain documented and reproducible.
+        </div>
+        <div class="fvec">PIM<br>Misconfiguration</div>
+        <div class="fres">GLOBAL ADMIN<br>IN 4 STEPS</div>
+      </div>
+      <div class="frow">
+        <div><span class="badge b-high">HIGH</span></div>
+        <div class="fname">
+          <strong>Azure OpenAI Prompt Injection → Exfiltration</strong>
+          System prompt extracted and data exfiltration demonstrated via PyRIT. The AI attack surface most assessments never examine.
+        </div>
+        <div class="fvec">PyRIT /<br>Prompt Injection</div>
+        <div class="fres">AI WORKLOAD<br>COMPROMISED</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-divider layer" data-label="Credentials"></div>
+
+<!-- CREDS -->
+<section class="creds layer">
+  <div class="wrap">
+    <div class="creds-grid reveal">
+      <div class="cred-card">
+        <div class="cred-org">ISC2 — Certified</div>
+        <div class="cred-acr">CC</div>
+        <div class="cred-full">Certified in Cybersecurity — Security principles, risk management, network security, access controls, and incident response.</div>
+      </div>
+      <div class="cred-card">
+        <div class="cred-org">Microsoft — Associate</div>
+        <div class="cred-acr">AZ-500</div>
+        <div class="cred-full">Azure Security Engineer — Identity and access, network security, compute, storage, and security operations on Azure.</div>
+      </div>
+      <div class="cred-card">
+        <div class="cred-org">Microsoft Applied Skills</div>
+        <div class="cred-acr">AI SEC</div>
+        <div class="cred-full">Secure AI Workloads on Azure — The credential covering attack surfaces most security assessments don't know exist yet.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact layer" id="contact">
+  <div class="contact-glow"></div>
+  <div class="wrap">
+    <div class="contact-grid">
+      <div class="reveal">
+        <div class="contact-pre">Begin</div>
+        <h2 class="contact-title">
+          <span class="ct1">THE</span>
+          <span class="ct2">VOID</span>
+          <span class="ct3">AWAITS</span>
+        </h2>
+        <p class="contact-text">
+          Taking on a limited number of new clients. <strong>If you're running an Azure environment in a regulated industry</strong> and want to know what your actual exposure looks like before someone else finds it — reach out.
+        </p>
+        <a href="mailto:contact@exorr.com" class="email-link">
+          <span class="email-addr">contact@exorr.com</span>
+          <span class="email-arr">→</span>
+        </a>
+      </div>
+      <div class="contact-table reveal reveal-d1">
+        <div class="ct-row">
+          <span class="ct-lbl">Status</span>
+          <span class="ct-val g"><span class="s-dot"></span>Available Now</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Open Slots</span>
+          <span class="ct-val g">2 Remaining</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Response</span>
+          <span class="ct-val w">Within 24 Hours</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Start Date</span>
+          <span class="ct-val w">Within 1 Week</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Industries</span>
+          <span class="ct-val w">Healthcare · Fintech · Legal</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Geography</span>
+          <span class="ct-val w">US · UK · Gulf</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Entry Point</span>
+          <span class="ct-val g">Quick Scan — $1,500</span>
+        </div>
+        <div class="ct-row">
+          <span class="ct-lbl">Retainer</span>
+          <span class="ct-val w">$5,000 / month</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="layer">
+  <div class="foot-inner">
+    <div class="foot-logo">EXORR</div>
+    <div class="foot-phrase">The void has no surface to attack.</div>
+    <div class="foot-copy">© 2026 — Azure · AI · Zero Compromise</div>
+  </div>
+</footer>
+
+<script>
+  // CURSOR
+  const cur = document.getElementById('cur');
+  const ring = document.getElementById('ring');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX; my=e.clientY;
+    cur.style.left=mx+'px'; cur.style.top=my+'px';
+  });
+  (function animRing(){
+    rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    requestAnimationFrame(animRing);
+  })();
+  document.querySelectorAll('a,button').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{
+      ring.style.width='44px'; ring.style.height='44px';
+      ring.style.borderColor='rgba(0,255,65,0.5)';
+    });
+    el.addEventListener('mouseleave',()=>{
+      ring.style.width='32px'; ring.style.height='32px';
+      ring.style.borderColor='rgba(0,255,65,0.25)';
+    });
+  });
+
+  // VOID CANVAS
+  const canvas=document.getElementById('void-canvas');
+  const ctx=canvas.getContext('2d');
+  function resize(){ canvas.width=innerWidth; canvas.height=innerHeight; }
+  resize(); window.addEventListener('resize',resize);
+
+  const pts=[];
+  for(let i=0;i<70;i++){
+    pts.push({
+      x:Math.random()*innerWidth,
+      y:Math.random()*innerHeight,
+      vx:(Math.random()-.5)*.18,
+      vy:(Math.random()-.5)*.18,
+      r:Math.random()*1.2+.4,
+      o:Math.random()*.35+.04,
+      p:Math.random()*Math.PI*2
+    });
+  }
+
+  let pmx=-9999,pmy=-9999;
+  document.addEventListener('mousemove',e=>{pmx=e.clientX;pmy=e.clientY;});
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pts.forEach((a,i)=>{
+      pts.slice(i+1).forEach(b=>{
+        const dx=a.x-b.x,dy=a.y-b.y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<130){
+          ctx.strokeStyle=`rgba(0,255,65,${(1-d/130)*.07})`;
+          ctx.lineWidth=.5;
+          ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+        }
+      });
+    });
+    pts.forEach(p=>{
+      p.p+=.018;
+      const dxm=p.x-pmx,dym=p.y-pmy;
+      const dm=Math.sqrt(dxm*dxm+dym*dym);
+      if(dm<160){
+        const f=(160-dm)/160*.4;
+        p.vx+=(dxm/dm)*f; p.vy+=(dym/dm)*f;
+      }
+      p.vx*=.98; p.vy*=.98;
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=canvas.width;
+      if(p.x>canvas.width)p.x=0;
+      if(p.y<0)p.y=canvas.height;
+      if(p.y>canvas.height)p.y=0;
+      const o=Math.max(0,p.o+Math.sin(p.p)*.08);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,255,65,${o})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // SCROLL REVEAL
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  },{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
