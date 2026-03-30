@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXORR — The Void Secures</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#000000;
+  --surface:#050505;
+  --border:#0f0f0f;
+  --border-mid:#181818;
+  --border-light:#242424;
+  --muted:#2a2a2a;
+  --dim:#404040;
+  --body:#606060;
+  --secondary:#909090;
+  --primary:#c0c0c0;
+  --white:#e0e0e0;
+  --pure:#f5f5f5;
+  --green:#00ff41;
+  --green-dim:rgba(0,255,65,0.04);
+  --green-glow:rgba(0,255,65,0.12);
+  --red:#ff4444;
+  --orange:#ff9944;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--void);color:var(--body);font-family:'Cormorant Garamond',serif;overflow-x:hidden;cursor:none;}
+
+/* CURSOR */
+#cur{position:fixed;width:4px;height:4px;background:var(--green);border-radius:50%;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--green-glow);transition:transform .1s;}
+#cur-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(0,255,65,0.2);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .3s,height .3s,border-color .3s;}
+.cur-trail{position:fixed;width:3px;height:3px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9998;opacity:0;transition:opacity .5s;}
+
+/* CANVAS */
+#canvas{position:fixed;inset:0;z-index:0;}
+
+/* SCROLL PROGRESS */
+#scroll-prog{position:fixed;left:0;top:0;bottom:0;width:2px;z-index:200;background:var(--border-mid);}
+#scroll-fill{width:100%;background:linear-gradient(180deg,var(--green),rgba(0,255,65,0.3));height:0%;transition:height .1s;}
+
+/* NOISE */
+.noise{position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.028;pointer-events:none;z-index:1;}
+
+.layer{position:relative;z-index:10;}
+
+/* LOADER */
+#loader{position:fixed;inset:0;z-index:1000;background:var(--void);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:28px;}
+#loader.hide{animation:loaderFade .8s ease forwards;}
+@keyframes loaderFade{to{opacity:0;pointer-events:none;}}
+.ld-sym{font-family:'Bebas Neue',sans-serif;font-size:100px;color:transparent;-webkit-text-stroke:1px rgba(0,255,65,0.6);letter-spacing:8px;animation:ldGlow 1.5s ease infinite;}
+@keyframes ldGlow{0%,100%{-webkit-text-stroke-color:rgba(0,255,65,0.2);}50%{-webkit-text-stroke-color:rgba(0,255,65,1);text-shadow:0 0 60px rgba(0,255,65,0.4);}}
+.ld-exorr{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--pure);letter-spacing:16px;opacity:0;animation:ldReveal .6s ease 1.5s forwards;}
+@keyframes ldReveal{to{opacity:1;}}
+.ld-bar{width:240px;height:1px;background:var(--border-mid);overflow:hidden;}
+.ld-fill{height:100%;background:linear-gradient(90deg,transparent,var(--green),transparent);animation:ldLoad 3.5s ease forwards;}
+@keyframes ldLoad{0%{width:0;margin-left:0;}50%{width:100%;margin-left:0;}100%{width:0;margin-left:100%;}}
+.ld-txt{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:5px;color:var(--muted);text-transform:uppercase;opacity:0;animation:ldReveal .6s ease 1s forwards;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 48px;height:72px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.97);backdrop-filter:blur(40px);border-bottom:1px solid var(--border-mid);}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:10px;color:var(--pure);text-decoration:none;display:flex;align-items:center;gap:3px;}
+.logo-dot{width:5px;height:5px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:breathe 3s ease infinite;}
+@keyframes breathe{0%,100%{opacity:1;box-shadow:0 0 8px var(--green);}50%{opacity:.2;box-shadow:0 0 2px var(--green);}}
+.nav-badge{display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--green);animation:badgePulse 4s ease infinite;}
+@keyframes badgePulse{0%,90%,100%{opacity:1;}95%{opacity:.4;}}
+.nav-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:breathe 2s ease infinite;}
+.nav-right{display:flex;align-items:center;gap:24px;}
+.nav-link{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-decoration:none;text-transform:uppercase;transition:color .3s;}
+.nav-link:hover{color:var(--green);}
+.nav-cta{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--green);text-decoration:none;text-transform:uppercase;border:1px solid rgba(0,255,65,0.3);padding:10px 20px;transition:all .3s;position:relative;overflow:hidden;}
+.nav-cta::before{content:'';position:absolute;inset:0;background:var(--green-dim);transform:translateX(-100%);transition:transform .3s;}
+.nav-cta:hover::before{transform:translateX(0);}
+.nav-cta:hover{border-color:var(--green);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;padding-top:72px;position:relative;overflow:hidden;}
+.hero-void{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:clamp(200px,35vw,520px);color:transparent;-webkit-text-stroke:1px rgba(0,255,65,0.02);pointer-events:none;user-select:none;animation:voidSpin 120s linear infinite;}
+@keyframes voidSpin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+
+/* CORNER MARKS */
+.corner-tl,.corner-tr,.corner-bl,.corner-br{position:absolute;width:24px;height:24px;pointer-events:none;}
+.corner-tl{top:8px;left:8px;border-top:1px solid rgba(0,255,65,0.4);border-left:1px solid rgba(0,255,65,0.4);}
+.corner-tr{top:8px;right:8px;border-top:1px solid rgba(0,255,65,0.4);border-right:1px solid rgba(0,255,65,0.4);}
+.corner-bl{bottom:8px;left:8px;border-bottom:1px solid rgba(0,255,65,0.4);border-left:1px solid rgba(0,255,65,0.4);}
+.corner-br{bottom:8px;right:8px;border-bottom:1px solid rgba(0,255,65,0.4);border-right:1px solid rgba(0,255,65,0.4);}
+
+.hero-content{position:relative;z-index:5;max-width:1200px;margin:0 auto;padding:0 48px;width:100%;display:grid;grid-template-columns:1.1fr .9fr;gap:80px;align-items:center;min-height:calc(100vh - 72px);}
+.hero-left{padding:80px 0;}
+.h-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:5px;color:var(--green);text-transform:uppercase;margin-bottom:40px;display:flex;align-items:center;gap:16px;opacity:0;animation:fadeUp 1s ease .3s forwards;}
+.h-tag::before{content:'';width:32px;height:1px;background:var(--green);}
+.h-title{margin-bottom:24px;opacity:0;animation:fadeUp 1s ease .5s forwards;}
+.t-ex{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,14vw,170px);color:var(--pure);letter-spacing:8px;line-height:.85;display:block;}
+.t-nu{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,14vw,170px);color:transparent;-webkit-text-stroke:1px var(--border-light);letter-spacing:8px;line-height:.85;display:block;}
+.t-su{font-family:'Bebas Neue',sans-serif;font-size:clamp(16px,2.5vw,28px);color:var(--muted);letter-spacing:16px;display:block;margin-top:20px;}
+
+/* GREEN ACCENT LINE */
+.hero-accent{width:100%;height:1px;background:linear-gradient(90deg,var(--green),rgba(0,255,65,0.3) 50%,transparent);opacity:.4;margin:24px 0;opacity:0;animation:fadeUp 1s ease .7s forwards;}
+
+.h-desc{font-size:18px;font-style:italic;color:var(--body);line-height:1.9;margin-bottom:48px;opacity:0;animation:fadeUp 1s ease .7s forwards;}
+.h-desc strong{color:var(--secondary);font-style:normal;font-weight:400;}
+.h-btns{display:flex;gap:16px;opacity:0;animation:fadeUp 1s ease .9s forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+
+/* STATS BAR */
+.stats-bar{opacity:0;animation:fadeUp 1s ease 1.1s forwards;margin-top:40px;display:flex;gap:32px;padding-top:32px;border-top:1px solid var(--border-mid);}
+.stat-item{}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--green);letter-spacing:3px;line-height:1;}
+.stat-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
+
+/* BUTTONS */
+.btn{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:16px 32px;transition:all .3s;display:inline-block;border:none;cursor:pointer;}
+.btn-g{background:var(--green);color:var(--void);font-weight:700;}
+.btn-g:hover{background:var(--pure);box-shadow:0 0 40px rgba(0,255,65,0.15);}
+.btn-o{border:1px solid var(--border-light);color:var(--muted);background:transparent;}
+.btn-o:hover{border-color:var(--green);color:var(--green);}
+
+/* TERMINAL */
+.hero-right{opacity:0;animation:fadeRight 1.2s ease .6s forwards;}
+@keyframes fadeRight{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.terminal{border:1px solid var(--border-mid);background:rgba(3,3,3,.97);}
+.t-bar{padding:16px 20px;border-bottom:1px solid var(--border-mid);display:flex;align-items:center;gap:10px;background:rgba(6,6,6,.8);}
+.td{width:10px;height:10px;border-radius:50%;}
+.td-r{background:#ff3b30;}.td-y{background:#ffcc00;}.td-g{background:var(--green);animation:breathe 2s infinite;box-shadow:0 0 6px var(--green);}
+.t-ttl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-left:8px;}
+.t-body{padding:8px 0;}
+.t-row{padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .2s;}
+.t-row:last-child{border-bottom:none;}
+.t-row:hover{background:var(--green-dim);}
+.t-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.t-val{font-family:'Space Mono',monospace;font-size:10px;}
+.t-val.g{color:var(--green);}.t-val.w{color:var(--secondary);}.t-val.d{color:var(--muted);}
+.t-bw{width:72px;height:1px;background:var(--border-mid);position:relative;overflow:hidden;}
+.t-bf{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(0,255,65,.3),var(--green));animation:growBar 2s ease forwards;}
+@keyframes growBar{from{width:0;}}
+
+/* LAYOUT */
+.wrap{max-width:1200px;margin:0 auto;padding:0 48px;}
+.v-div{height:1px;margin:0 48px;background:linear-gradient(90deg,transparent,var(--border-mid) 30%,var(--border-mid) 70%,transparent);position:relative;}
+.v-div[data-l]::after{content:attr(data-l);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:5px;color:var(--muted);text-transform:uppercase;background:var(--void);padding:0 24px;}
+
+/* RECOMMENDER */
+.recommender{padding:120px 0;position:relative;}
+.rec-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,255,65,0.015) 0%,transparent 60%);}
+.rec-wrap{border:1px solid var(--border-mid);padding:56px;position:relative;overflow:hidden;}
+.rec-wrap::before{content:'∅';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:380px;color:transparent;-webkit-text-stroke:1px rgba(0,255,65,.018);pointer-events:none;line-height:1;}
+.rec-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:12px;}
+.rec-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,5vw,64px);color:var(--pure);letter-spacing:4px;margin-bottom:8px;}
+.rec-sub{font-size:15px;font-style:italic;color:var(--body);margin-bottom:40px;}
+.rec-prog{display:flex;gap:8px;margin-bottom:32px;}
+.rp-dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--border-mid);transition:all .3s;}
+.rp-dot.done{background:var(--green);border-color:var(--green);box-shadow:0 0 6px var(--green);}
+.rp-dot.active{border-color:var(--green);}
+.rec-step{display:none;}
+.rec-step.active{display:block;}
+.rec-q{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--secondary);font-style:italic;margin-bottom:24px;}
+.rec-opts{display:flex;flex-wrap:wrap;gap:10px;}
+.rec-opt{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:12px 20px;border:1px solid var(--border-mid);color:var(--muted);background:transparent;cursor:pointer;transition:all .3s;}
+.rec-opt:hover,.rec-opt.sel{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.rec-result{display:none;padding:40px;border:1px solid var(--border-mid);background:var(--green-dim);}
+.rec-result.show{display:block;}
+.rr-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:12px;}
+.rr-name{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--pure);letter-spacing:4px;margin-bottom:4px;}
+.rr-price{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--green);letter-spacing:3px;margin-bottom:12px;}
+.rr-desc{font-size:15px;font-style:italic;color:var(--body);margin-bottom:24px;}
+
+/* PHILOSOPHY */
+.philosophy{padding:160px 0;position:relative;}
+.phi-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,255,65,.012) 0%,transparent 65%);pointer-events:none;}
+.phi-inner{display:grid;grid-template-columns:200px 1fr;gap:100px;align-items:start;}
+.phi-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:20px;}
+.phi-sym{font-family:'Bebas Neue',sans-serif;font-size:140px;color:transparent;-webkit-text-stroke:1px var(--border-mid);line-height:1;letter-spacing:4px;}
+.phi-q{font-size:clamp(26px,3.5vw,44px);font-weight:300;font-style:italic;color:var(--secondary);line-height:1.45;margin-bottom:32px;}
+.phi-q em{color:var(--pure);font-style:normal;}
+.phi-accent{height:1px;background:linear-gradient(90deg,var(--green),transparent);opacity:.3;margin-bottom:32px;}
+.phi-b{font-size:16px;color:var(--body);line-height:2;max-width:560px;}
+.phi-b p{margin-bottom:20px;}
+.phi-b strong{color:var(--secondary);font-weight:400;}
+
+/* SERVICES */
+.services{padding:160px 0;}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:64px;}
+.big-t{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,96px);color:var(--pure);letter-spacing:6px;line-height:.9;}
+.big-t .gh{color:transparent;-webkit-text-stroke:1px var(--border-light);display:block;}
+.sh-d{max-width:300px;font-size:14px;font-style:italic;color:var(--muted);line-height:1.8;text-align:right;}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border-mid);border-right:none;border-bottom:none;}
+.svc-card{border-right:1px solid var(--border-mid);border-bottom:1px solid var(--border-mid);padding:48px 40px;position:relative;overflow:hidden;transition:background .4s;}
+.svc-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);transform:scaleX(0);transition:transform .5s;}
+.svc-card:hover::after{transform:scaleX(1);}
+.svc-card:hover{background:rgba(0,255,65,.005);}
+.svc-n{font-family:'Bebas Neue',sans-serif;font-size:64px;color:transparent;-webkit-text-stroke:1px var(--border-mid);line-height:1;margin-bottom:24px;letter-spacing:4px;transition:-webkit-text-stroke-color .4s;}
+.svc-card:hover .svc-n{-webkit-text-stroke-color:rgba(0,255,65,.1);}
+.svc-t{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:12px;}
+.svc-nm{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--pure);line-height:1.2;margin-bottom:8px;}
+.svc-pw{margin:20px 0;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.svc-p{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--pure);letter-spacing:3px;line-height:1;}
+.svc-p .c{font-size:20px;color:var(--green);vertical-align:super;}
+.svc-p .pr{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;}
+.svc-d{font-size:14px;font-style:italic;color:var(--body);line-height:1.8;margin-bottom:24px;}
+.svc-l{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.svc-l li{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;display:flex;gap:12px;align-items:flex-start;transition:color .2s;}
+.svc-card:hover .svc-l li{color:var(--body);}
+.svc-l li::before{content:'—';color:var(--green);flex-shrink:0;}
+.svc-cta{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--green);text-decoration:none;display:inline-flex;align-items:center;gap:12px;transition:gap .3s;}
+.svc-cta:hover{gap:20px;}
+.svc-cta::after{content:'→';}
+.pentest-b{border:1px solid var(--border-mid);border-top:none;padding:40px 48px;display:flex;justify-content:space-between;align-items:center;transition:background .3s;}
+.pentest-b:hover{background:var(--green-dim);}
+.pt-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.pt-nm{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--secondary);font-weight:300;font-style:italic;}
+.pt-nm em{color:var(--pure);font-style:normal;}
+.pt-r{display:flex;align-items:center;gap:40px;}
+.pt-p{font-family:'Bebas Neue',sans-serif;font-size:44px;color:var(--pure);letter-spacing:3px;}
+.pt-note{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;max-width:180px;text-align:right;line-height:1.6;}
+
+/* FINDINGS */
+.findings{padding:0 0 160px;}
+.ft{border:1px solid var(--border-mid);}
+.fth{display:grid;grid-template-columns:110px 1fr 180px 150px;padding:16px 32px;border-bottom:1px solid var(--border-mid);background:var(--surface);}
+.fth span{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.fr{display:grid;grid-template-columns:110px 1fr 180px 150px;padding:28px 32px;border-bottom:1px solid var(--border);align-items:center;transition:background .2s;}
+.fr:last-child{border-bottom:none;}
+.fr:hover{background:var(--green-dim);}
+.bd{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;display:inline-block;}
+.bc{background:rgba(255,51,51,.08);color:#ff6666;border:1px solid rgba(255,51,51,.18);}
+.bh{background:rgba(255,136,0,.08);color:#ffaa55;border:1px solid rgba(255,136,0,.18);}
+.fn{font-size:14px;font-style:italic;color:var(--body);}
+.fn strong{font-style:normal;color:var(--primary);font-weight:400;display:block;margin-bottom:4px;}
+.fv{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;}
+.frs{font-family:'Space Mono',monospace;font-size:9px;color:var(--green);letter-spacing:1px;text-align:right;}
+
+/* CREDENTIALS */
+.creds{padding:0 0 160px;}
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-mid);border:1px solid var(--border-mid);}
+.cc{background:var(--void);padding:48px 40px;position:relative;overflow:hidden;transition:background .3s;}
+.cc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);transform:scaleX(0);transition:transform .4s;}
+.cc:hover::after{transform:scaleX(1);}
+.cc:hover{background:var(--surface);}
+.cc-org{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:20px;}
+.cc-acr{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--pure);letter-spacing:6px;line-height:1;margin-bottom:12px;}
+.cc-full{font-size:13px;font-style:italic;color:var(--muted);line-height:1.6;}
+.cc-stat{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.cc-stat.done{color:var(--green);}
+.cc-stat.prog{color:var(--orange);}
+.cc-stat.up{color:var(--muted);}
+
+/* BOOKING */
+.booking{padding:0 0 160px;}
+.bk-inner{border:1px solid var(--border-mid);position:relative;overflow:hidden;}
+.bk-inner::before{content:'∅';position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:400px;color:transparent;-webkit-text-stroke:1px rgba(0,255,65,.016);pointer-events:none;line-height:1;}
+.bk-head{padding:48px 56px 40px;border-bottom:1px solid var(--border-mid);}
+.bk-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,7vw,80px);color:var(--pure);letter-spacing:6px;line-height:.9;margin-bottom:16px;}
+.bk-title span{color:var(--green);}
+.bk-sub{font-size:16px;font-style:italic;color:var(--body);max-width:500px;line-height:1.8;}
+.bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.bk-form{padding:48px 56px;border-right:1px solid var(--border-mid);}
+.fg{margin-bottom:28px;}
+.fl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:12px;display:block;}
+.fi,.fsel,.fta{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border-mid);color:var(--white);font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1px;padding:12px 0;outline:none;transition:border-color .3s;-webkit-appearance:none;}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--green);color:var(--pure);}
+.fi::placeholder,.fta::placeholder{color:var(--dim);}
+.fsel{cursor:pointer;color:var(--secondary);}
+.fsel option{background:var(--surface);color:var(--white);}
+.fta{height:100px;resize:none;}
+.fsub{width:100%;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;background:var(--green);color:var(--void);font-weight:700;border:none;padding:18px;cursor:pointer;transition:all .3s;margin-top:8px;}
+.fsub:hover{background:var(--pure);}
+.fsub:disabled{opacity:.5;cursor:not-allowed;}
+.f-ok{display:none;text-align:center;padding:48px 0;}
+.f-ok.show{display:block;}
+.f-ok-sym{font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--green);letter-spacing:8px;margin-bottom:8px;}
+.f-ok-t{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--pure);letter-spacing:4px;margin-bottom:8px;}
+.f-ok-d{font-size:15px;font-style:italic;color:var(--body);}
+.bk-info{padding:48px 56px;}
+.bi-block{margin-bottom:40px;}
+.bi-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.bi-lbl::after{content:'';flex:1;height:1px;background:var(--border-mid);}
+.bi-rows{display:flex;flex-direction:column;gap:1px;background:var(--border-mid);}
+.bi-row{background:var(--void);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+.bi-k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.bi-v{font-family:'Space Mono',monospace;font-size:10px;}
+.bi-v.g{color:var(--green);}.bi-v.w{color:var(--secondary);}
+
+/* PAYMENT */
+.payment{padding:0 0 160px;}
+.pay-head{text-align:center;padding:64px 0 48px;}
+.pay-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,96px);color:var(--pure);letter-spacing:6px;line-height:.9;margin-bottom:16px;}
+.pay-title span{color:transparent;-webkit-text-stroke:1px var(--border-light);}
+.pay-sub{font-size:16px;font-style:italic;color:var(--body);}
+.pay-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border-mid);border-right:none;border-bottom:none;}
+.pc{border-right:1px solid var(--border-mid);border-bottom:1px solid var(--border-mid);padding:40px;text-align:center;position:relative;overflow:hidden;transition:background .3s;}
+.pc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);transform:scaleX(0);transition:transform .4s;}
+.pc:hover::after{transform:scaleX(1);}
+.pc:hover{background:var(--green-dim);}
+.pc-n{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;}
+.pc-p{font-family:'Bebas Neue',sans-serif;font-size:56px;color:var(--pure);letter-spacing:4px;line-height:1;margin-bottom:8px;}
+.pc-p .c{font-size:28px;color:var(--green);vertical-align:super;}
+.pc-d{font-size:13px;font-style:italic;color:var(--body);margin-bottom:24px;line-height:1.6;}
+.pc-btn{display:block;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--void);background:var(--green);text-decoration:none;padding:14px;font-weight:700;transition:all .3s;}
+.pc-btn:hover{background:var(--pure);}
+.pay-ret{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border-mid);border-top:none;border-right:none;}
+.pr{border-right:1px solid var(--border-mid);border-bottom:1px solid var(--border-mid);padding:40px;display:flex;justify-content:space-between;align-items:center;transition:background .3s;}
+.pr:hover{background:var(--green-dim);}
+.pr-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:8px;}
+.pr-nm{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--pure);font-weight:300;margin-bottom:4px;}
+.pr-d{font-size:13px;font-style:italic;color:var(--body);}
+.pr-r{text-align:right;}
+.pr-p{font-family:'Bebas Neue',sans-serif;font-size:44px;color:var(--pure);letter-spacing:3px;display:block;line-height:1;}
+.pr-p .c{font-size:22px;color:var(--green);vertical-align:super;}
+.pr-p .pp{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);}
+.pr-btn{display:block;margin-top:16px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--void);background:var(--green);text-decoration:none;padding:12px 20px;font-weight:700;transition:all .3s;}
+.pr-btn:hover{background:var(--pure);}
+
+/* INVOICE MODAL */
+#inv-modal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.96);align-items:center;justify-content:center;padding:24px;overflow-y:auto;}
+#inv-modal.show{display:flex;}
+.inv-box{background:var(--void);border:1px solid var(--border-mid);max-width:860px;width:100%;position:relative;overflow:hidden;}
+.inv-box::before{content:'∅';position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:500px;color:transparent;-webkit-text-stroke:1px rgba(0,255,65,0.02);pointer-events:none;line-height:1;}
+.inv-close{position:absolute;top:20px;right:20px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);background:none;border:none;cursor:pointer;transition:color .2s;z-index:10;}
+.inv-close:hover{color:var(--green);}
+
+/* INVOICE HEADER */
+.inv-head{padding:52px 56px 40px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;border-bottom:1px solid var(--border);position:relative;}
+.inv-head::after{content:'';position:absolute;bottom:0;left:56px;right:56px;height:1px;background:linear-gradient(90deg,var(--green),transparent);opacity:.3;}
+.inv-brand-name{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--pure);letter-spacing:10px;line-height:1;margin-bottom:4px;}
+.inv-brand-dot{display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%;margin-left:4px;vertical-align:middle;box-shadow:0 0 8px var(--green);}
+.inv-brand-sub{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--dim);text-transform:uppercase;margin-bottom:24px;}
+.inv-contact{display:flex;flex-direction:column;gap:6px;}
+.inv-ci{font-family:'Space Mono',monospace;font-size:10px;color:var(--body);letter-spacing:1px;display:flex;gap:12px;align-items:center;}
+.inv-ci-dot{color:var(--green);font-size:10px;width:14px;}
+.inv-meta{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.inv-word{font-family:'Bebas Neue',sans-serif;font-size:48px;color:transparent;-webkit-text-stroke:1px var(--border-light);letter-spacing:8px;line-height:1;margin-bottom:16px;}
+.inv-mr{display:flex;gap:24px;align-items:center;}
+.inv-ml{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.inv-mv{font-family:'Space Mono',monospace;font-size:11px;color:var(--secondary);letter-spacing:1px;min-width:120px;text-align:right;}
+.inv-stamp{position:absolute;top:40px;right:56px;border:2px solid rgba(0,255,65,.3);padding:8px 16px;transform:rotate(-8deg);}
+.inv-stamp-txt{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;color:rgba(0,255,65,.3);}
+
+/* INVOICE PARTIES */
+.inv-parties{padding:36px 56px;display:grid;grid-template-columns:1fr 1fr;gap:40px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--surface) 0%,transparent 100%);}
+.inv-party-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.inv-party-lbl::after{content:'';flex:1;height:1px;background:var(--border-mid);}
+.inv-party-name{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--white);font-weight:300;margin-bottom:6px;}
+.inv-party-det{font-family:'Space Mono',monospace;font-size:10px;color:var(--body);letter-spacing:1px;line-height:1.8;}
+
+/* INVOICE TABLE */
+.inv-table{padding:0 56px;margin:36px 0 0;}
+.inv-th-row{display:grid;grid-template-columns:1fr 100px 120px 130px;padding:12px 0;border-bottom:1px solid var(--border-mid);}
+.inv-th-cell{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.inv-th-cell:not(:first-child){text-align:right;}
+.inv-item-row{display:grid;grid-template-columns:1fr 100px 120px 130px;padding:24px 0;border-bottom:1px solid var(--border);align-items:start;}
+.inv-item-name{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--white);font-weight:300;margin-bottom:6px;}
+.inv-item-desc{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px;line-height:1.7;}
+.inv-cell{font-family:'Space Mono',monospace;font-size:12px;color:var(--secondary);text-align:right;padding-top:4px;letter-spacing:1px;}
+.inv-cell.amt{color:var(--primary);}
+
+/* INVOICE TOTALS */
+.inv-totals{padding:28px 56px 36px;display:flex;justify-content:flex-end;border-bottom:1px solid var(--border);}
+.inv-totals-box{width:320px;display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border-mid);}
+.inv-tot-row{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:var(--void);}
+.inv-tot-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.inv-tot-val{font-family:'Space Mono',monospace;font-size:12px;color:var(--secondary);letter-spacing:1px;}
+.inv-tot-row.grand{background:var(--surface);padding:20px;}
+.inv-tot-row.grand .inv-tot-lbl{font-size:10px;color:var(--green);letter-spacing:4px;}
+.inv-tot-row.grand .inv-tot-val{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--pure);letter-spacing:3px;}
+.inv-tot-row.grand .inv-tot-val .c{font-size:18px;color:var(--green);vertical-align:super;}
+
+/* INVOICE PAYMENT */
+.inv-pay-section{padding:36px 56px;display:grid;grid-template-columns:1fr 1fr;gap:40px;border-bottom:1px solid var(--border);background:linear-gradient(0deg,var(--surface) 0%,transparent 100%);}
+.inv-pay-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.inv-pay-lbl::after{content:'';flex:1;height:1px;background:var(--border-mid);}
+.inv-pay-method{font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--secondary);font-weight:300;margin-bottom:8px;font-style:italic;}
+.inv-wallet{font-family:'Space Mono',monospace;font-size:9px;color:var(--green);letter-spacing:1px;word-break:break-all;line-height:1.6;background:var(--green-dim);padding:12px 16px;border:1px solid rgba(0,255,65,.1);margin-top:8px;}
+.inv-link-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.inv-link-val{font-family:'Space Mono',monospace;font-size:10px;color:var(--green);word-break:break-all;letter-spacing:1px;}
+
+/* INVOICE PHILOSOPHY */
+.inv-phi{padding:32px 56px;border-bottom:1px solid var(--border);position:relative;}
+.inv-phi-txt{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--muted);line-height:1.8;max-width:600px;}
+.inv-phi-txt em{color:var(--dim);font-style:normal;}
+.inv-phi-mark{position:absolute;right:56px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:80px;color:transparent;-webkit-text-stroke:1px var(--border);letter-spacing:4px;line-height:1;}
+.inv-footer-bar{padding:28px 56px;display:flex;justify-content:space-between;align-items:center;}
+.inv-f-brand{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:6px;color:var(--muted);}
+.inv-f-tag{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--muted);}
+.inv-f-web{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);}
+.inv-dl{width:100%;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;background:var(--green);color:var(--void);font-weight:700;border:none;padding:16px;cursor:pointer;transition:all .3s;}
+.inv-dl:hover{background:var(--pure);}
+
+/* CONTACT */
+.contact{padding:160px 0;position:relative;border-top:1px solid var(--border-mid);}
+.contact-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 15% 50%,rgba(0,255,65,.018) 0%,transparent 50%);pointer-events:none;}
+.cg-grid{display:grid;grid-template-columns:1fr 1fr;gap:100px;align-items:center;}
+.c-pre{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:5px;color:var(--green);text-transform:uppercase;margin-bottom:32px;display:flex;align-items:center;gap:16px;}
+.c-pre::before{content:'';width:24px;height:1px;background:var(--green);}
+.c-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,10vw,112px);line-height:.85;letter-spacing:4px;margin-bottom:48px;}
+.ct1{color:var(--pure);display:block;}.ct2{color:transparent;-webkit-text-stroke:1px var(--border-light);display:block;}.ct3{color:var(--green);display:block;}
+.c-txt{font-size:17px;font-style:italic;color:var(--body);line-height:1.9;margin-bottom:40px;}
+.c-txt strong{color:var(--secondary);font-style:normal;font-weight:400;}
+.c-links{display:flex;flex-direction:column;gap:16px;}
+.c-link{display:flex;align-items:center;gap:16px;text-decoration:none;transition:all .3s;}
+.cl-ic{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;width:80px;flex-shrink:0;}
+.cl-v{font-family:'Space Mono',monospace;font-size:11px;color:var(--secondary);letter-spacing:1px;border-bottom:1px solid transparent;transition:all .3s;}
+.c-link:hover .cl-v{color:var(--green);border-color:rgba(0,255,65,.3);}
+.c-table{display:flex;flex-direction:column;gap:1px;background:var(--border-mid);border:1px solid var(--border-mid);}
+.c-row{background:var(--void);padding:22px 28px;display:flex;justify-content:space-between;align-items:center;transition:background .2s;}
+.c-row:hover{background:var(--green-dim);}
+.ck{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.cv{font-family:'Space Mono',monospace;font-size:10px;}
+.cv.g{color:var(--green);}.cv.w{color:var(--secondary);}
+.sdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:breathe 2s infinite;margin-right:8px;}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:40px 0;}
+.fi-inner{max-width:1200px;margin:0 auto;padding:0 48px;display:flex;justify-content:space-between;align-items:center;}
+.f-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:8px;color:var(--muted);}
+.f-ph{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:var(--muted);}
+.f-cp{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);}
+
+/* WHATSAPP */
+.wa{position:fixed;bottom:32px;right:32px;z-index:500;width:56px;height:56px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .3s;animation:waPulse 4s ease infinite;}
+@keyframes waPulse{0%,80%,100%{box-shadow:0 0 20px rgba(0,255,65,.3);}90%{box-shadow:0 0 40px rgba(0,255,65,.6);}}
+.wa:hover{transform:scale(1.1);box-shadow:0 0 40px rgba(0,255,65,.5);}
+.wa svg{width:28px;height:28px;fill:var(--void);}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+.rd1{transition-delay:.1s;}.rd2{transition-delay:.2s;}.rd3{transition-delay:.3s;}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero-content,.cg-grid,.bk-grid,.pay-grid,.pay-ret,.svc-grid,.cg,.phi-inner{grid-template-columns:1fr;}
+  .hero-right,.nav-badge{display:none;}
+  .wrap,.bk-form,.bk-info{padding:0 24px;}
+  .bk-form,.bk-info{padding:32px 24px;}
+  .v-div{margin:0 24px;}
+  .phi-inner{gap:40px;}
+  .sh{flex-direction:column;gap:24px;}
+  .sh-d{text-align:left;}
+  .fth,.fr{grid-template-columns:90px 1fr 100px;}
+  .frs{display:none;}
+  .pentest-b{flex-direction:column;gap:24px;}
+  .pt-r{flex-direction:column;gap:16px;}
+  .pr{flex-direction:column;gap:20px;}
+  .pr-r{text-align:left;}
+  .fi-inner{flex-direction:column;gap:16px;text-align:center;}
+  .inv-head,.inv-parties,.inv-pay-section{grid-template-columns:1fr;}
+  .inv-th-row,.inv-item-row{grid-template-columns:1fr 120px;}
+  .inv-cell:nth-child(2),.inv-th-cell:nth-child(2),.inv-cell:nth-child(3),.inv-th-cell:nth-child(3){display:none;}
+  .rec-wrap{padding:32px;}
+  .bk-head,.inv-head{padding:32px 24px;}
+  .inv-totals,.inv-pay-section,.inv-phi,.inv-footer-bar,.inv-table,.inv-parties{padding-left:24px;padding-right:24px;}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div id="scroll-prog"><div id="scroll-fill"></div></div>
+<div class="noise"></div>
+<canvas id="canvas"></canvas>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-sym">∅</div>
+  <div class="ld-exorr">EXORR</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-txt">Initializing the Void</div>
+</div>
+
+<!-- WHATSAPP -->
+<a href="https://wa.me/263717380546" class="wa" target="_blank" rel="noopener">
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- INVOICE MODAL -->
+<div id="inv-modal">
+  <div class="inv-box">
+    <button class="inv-close" onclick="closeInvoice()">✕ CLOSE</button>
+    <div class="inv-head">
+      <div>
+        <div class="inv-brand-name">EXORR<span class="inv-brand-dot"></span></div>
+        <div class="inv-brand-sub">Security Advisory · Azure · AI</div>
+        <div class="inv-contact">
+          <div class="inv-ci"><span class="inv-ci-dot">✦</span>exorrnull@gmail.com</div>
+          <div class="inv-ci"><span class="inv-ci-dot">✦</span>+263 717 380 546</div>
+          <div class="inv-ci"><span class="inv-ci-dot">✦</span>exorrtech.github.io</div>
+        </div>
+      </div>
+      <div class="inv-meta">
+        <div class="inv-word">INVOICE</div>
+        <div class="inv-mr"><span class="inv-ml">Number</span><span class="inv-mv" id="inv-num">INV-001</span></div>
+        <div class="inv-mr"><span class="inv-ml">Issued</span><span class="inv-mv" id="inv-date"></span></div>
+        <div class="inv-mr"><span class="inv-ml">Due</span><span class="inv-mv">7 Days</span></div>
+        <div class="inv-mr"><span class="inv-ml">Currency</span><span class="inv-mv">USD</span></div>
+      </div>
+      <div class="inv-stamp"><div class="inv-stamp-txt">AWAITING</div></div>
+    </div>
+    <div class="inv-parties">
+      <div>
+        <div class="inv-party-lbl">Bill From</div>
+        <div class="inv-party-name">EXORR Security Advisory</div>
+        <div class="inv-party-det">Azure Security & AI Advisory</div>
+        <div class="inv-party-det">exorrtech.github.io</div>
+      </div>
+      <div>
+        <div class="inv-party-lbl">Bill To</div>
+        <div class="inv-party-name" id="inv-client">Client Name</div>
+        <div class="inv-party-det" id="inv-company">Company</div>
+        <div class="inv-party-det" id="inv-email">email@company.com</div>
+      </div>
+    </div>
+    <div class="inv-table">
+      <div class="inv-th-row">
+        <div class="inv-th-cell">Service</div>
+        <div class="inv-th-cell">Qty</div>
+        <div class="inv-th-cell">Rate</div>
+        <div class="inv-th-cell">Amount</div>
+      </div>
+      <div class="inv-item-row">
+        <div>
+          <div class="inv-item-name" id="inv-svc-name">Service</div>
+          <div class="inv-item-desc" id="inv-svc-desc">Description</div>
+        </div>
+        <div class="inv-cell">1</div>
+        <div class="inv-cell" id="inv-rate">$0</div>
+        <div class="inv-cell amt" id="inv-amt">$0</div>
+      </div>
+    </div>
+    <div class="inv-totals">
+      <div class="inv-totals-box">
+        <div class="inv-tot-row"><span class="inv-tot-lbl">Subtotal</span><span class="inv-tot-val" id="inv-sub">$0</span></div>
+        <div class="inv-tot-row"><span class="inv-tot-lbl">Tax</span><span class="inv-tot-val">$0.00</span></div>
+        <div class="inv-tot-row grand"><span class="inv-tot-lbl">Total Due</span><span class="inv-tot-val"><span class="c">$</span><span id="inv-total">0</span></span></div>
+      </div>
+    </div>
+    <div class="inv-pay-section">
+      <div>
+        <div class="inv-pay-lbl">Payment Method</div>
+        <div class="inv-pay-method">USDT — Tron Network (TRC-20)</div>
+        <div class="inv-wallet" id="inv-wallet">Payment link below</div>
+      </div>
+      <div>
+        <div class="inv-pay-lbl">Pay Online</div>
+        <div class="inv-pay-method">Click link to pay instantly</div>
+        <div class="inv-link-label">Payment Link</div>
+        <div class="inv-link-val" id="inv-link">nowpayments.io/payment/...</div>
+      </div>
+    </div>
+    <div class="inv-phi">
+      <div class="inv-phi-txt">The void has no surface to attack — <em>we make your Azure infrastructure the same.</em> This engagement represents our commitment to genuine security, not performed security. Every finding is real. Every recommendation actionable. Every hour yours.</div>
+      <div class="inv-phi-mark">∅</div>
+    </div>
+    <div class="inv-footer-bar">
+      <div class="inv-f-brand">EXORR</div>
+      <div class="inv-f-tag">The void secures what matters.</div>
+      <div class="inv-f-web">exorrtech.github.io</div>
+    </div>
+    <button class="inv-dl" onclick="downloadPDF()">Download Invoice PDF ↓</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="layer">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">EXORR<span class="logo-dot"></span></a>
+    <div class="nav-badge"><div class="nav-badge-dot"></div>2 Slots Open</div>
+    <div class="nav-right">
+      <a href="#services" class="nav-link">Services</a>
+      <a href="#findings" class="nav-link">Findings</a>
+      <a href="#book" class="nav-link">Book</a>
+      <a href="#pay" class="nav-link">Pay</a>
+      <a href="#contact" class="nav-cta">Begin</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero layer">
+  <div class="hero-void">∅</div>
+  <div class="corner-tl"></div><div class="corner-tr"></div>
+  <div class="corner-bl"></div><div class="corner-br"></div>
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="h-tag">Azure Security & AI Advisory · Est. 2026</div>
+      <div class="h-title">
+        <span class="t-ex">EXORR</span>
+        <span class="t-nu">NULL</span>
+        <span class="t-su">SECURES THE VOID</span>
+      </div>
+      <div class="hero-accent"></div>
+      <p class="h-desc">The void has no surface to attack.<br><strong>We make your Azure infrastructure the same.</strong><br>Fractional CISO and AI security services for founders who can't afford to find out the hard way.</p>
+      <div class="h-btns">
+        <a href="#book" class="btn btn-g">Book A Scan</a>
+        <a href="#services" class="btn btn-o">View Services ↓</a>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-item"><div class="stat-num" data-target="9">0</div><div class="stat-label">CVSS Score</div></div>
+        <div class="stat-item"><div class="stat-num" data-target="3">0</div><div class="stat-label">Critical Findings</div></div>
+        <div class="stat-item"><div class="stat-num" data-target="2">0</div><div class="stat-label">Slots Open</div></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="terminal">
+        <div class="t-bar">
+          <div class="td td-r"></div><div class="td td-y"></div><div class="td td-g"></div>
+          <div class="t-ttl">// exorr.status</div>
+        </div>
+        <div class="t-body">
+          <div class="t-row"><span class="t-lbl">Status</span><span class="t-val g">● AVAILABLE</span></div>
+          <div class="t-row"><span class="t-lbl">Open Slots</span><span class="t-val g">2 Remaining</span></div>
+          <div class="t-row"><span class="t-lbl">Response</span><span class="t-val w">Within 24h</span></div>
+          <div class="t-row"><span class="t-lbl">Specialization</span><span class="t-val w">Azure + AI</span></div>
+          <div class="t-row"><span class="t-lbl">AI Workloads</span><div class="t-bw"><div class="t-bf" style="width:95%"></div></div></div>
+          <div class="t-row"><span class="t-lbl">Entra ID</span><div class="t-bw"><div class="t-bf" style="width:91%;animation-delay:.3s"></div></div></div>
+          <div class="t-row"><span class="t-lbl">Zero Trust</span><div class="t-bw"><div class="t-bf" style="width:88%;animation-delay:.6s"></div></div></div>
+          <div class="t-row"><span class="t-lbl">Coverage</span><span class="t-val d">US · UK · GULF</span></div>
+          <div class="t-row"><span class="t-lbl">Entry Point</span><span class="t-val g">$1,500</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RECOMMENDER -->
+<section class="recommender layer" id="rec">
+  <div class="rec-bg"></div>
+  <div class="wrap">
+    <div class="rec-wrap reveal">
+      <div class="rec-tag">// Find Your Service</div>
+      <h2 class="rec-title">WHAT DO YOU NEED?</h2>
+      <p class="rec-sub">Answer 3 questions. We recommend the right engagement for your situation.</p>
+      <div class="rec-prog">
+        <div class="rp-dot active" id="pd1"></div>
+        <div class="rp-dot" id="pd2"></div>
+        <div class="rp-dot" id="pd3"></div>
+      </div>
+      <div id="rs1" class="rec-step active">
+        <p class="rec-q">How large is your company?</p>
+        <div class="rec-opts">
+          <button class="rec-opt" onclick="ra(1,'small')">Under 50 employees</button>
+          <button class="rec-opt" onclick="ra(1,'mid')">50–200 employees</button>
+          <button class="rec-opt" onclick="ra(1,'large')">200+ employees</button>
+        </div>
+      </div>
+      <div id="rs2" class="rec-step">
+        <p class="rec-q">Do you run AI workloads on Azure?</p>
+        <div class="rec-opts">
+          <button class="rec-opt" onclick="ra(2,'yes')">Yes — Azure OpenAI / Copilot</button>
+          <button class="rec-opt" onclick="ra(2,'no')">Not yet</button>
+          <button class="rec-opt" onclick="ra(2,'unsure')">Not sure</button>
+        </div>
+      </div>
+      <div id="rs3" class="rec-step">
+        <p class="rec-q">Have you had a security assessment before?</p>
+        <div class="rec-opts">
+          <button class="rec-opt" onclick="ra(3,'yes')">Yes — within last year</button>
+          <button class="rec-opt" onclick="ra(3,'old')">Yes — over a year ago</button>
+          <button class="rec-opt" onclick="ra(3,'no')">Never</button>
+        </div>
+      </div>
+      <div id="rec-res" class="rec-result">
+        <div class="rr-tag">Recommended For You</div>
+        <div class="rr-name" id="rr-name"></div>
+        <div class="rr-price" id="rr-price"></div>
+        <div class="rr-desc" id="rr-desc"></div>
+        <a href="#book" class="btn btn-g">Book This Now</a>&nbsp;&nbsp;
+        <button class="btn btn-o" onclick="resetRec()">Start Over</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Philosophy"></div>
+
+<!-- PHILOSOPHY -->
+<section class="philosophy layer">
+  <div class="phi-bg"></div>
+  <div class="wrap">
+    <div class="phi-inner reveal">
+      <div>
+        <div class="phi-tag">// Philosophy</div>
+        <div class="phi-sym">∅</div>
+      </div>
+      <div>
+        <p class="phi-q">The void has no edge to breach.<br><em>That which cannot be found cannot be compromised.</em></p>
+        <div class="phi-accent"></div>
+        <div class="phi-b">
+          <p>Most security operates on the assumption that if you build walls high enough, nothing gets through. <strong>EXORR operates differently.</strong> The most secure architecture presents nothing to attack — minimized surface, dissolved assumptions, invisible where it can be.</p>
+          <p>We bring this philosophy to your Azure environment. <strong>Not adding layers. Removing exposure.</strong> Not generating reports. Eliminating the conditions that make breaches possible. The void doesn't defend itself. It simply has nothing to take.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Services" id="services"></div>
+
+<!-- SERVICES -->
+<section class="services layer">
+  <div class="wrap">
+    <div class="sh reveal">
+      <h2 class="big-t">SIX<br><span class="gh">VECTORS</span></h2>
+      <p class="sh-d">From rapid exposure mapping to full offensive security — structured around what you actually need.</p>
+    </div>
+    <div class="svc-grid">
+      <div class="svc-card reveal">
+        <div class="svc-n">01</div>
+        <div class="svc-t">Entry Point</div>
+        <div class="svc-nm">Void Scan</div>
+        <div class="svc-pw"><div class="svc-p"><span class="c">$</span>1,500</div></div>
+        <p class="svc-d">Rapid Azure + AI exposure mapping. Top 3 critical risks. Executive report in 5 days.</p>
+        <ul class="svc-l">
+          <li>Full Azure environment review</li>
+          <li>AI workload exposure check</li>
+          <li>Top 3 risks documented</li>
+          <li>Executive summary — 3 minutes</li>
+          <li>30-minute debrief call</li>
+        </ul>
+        <a href="#book" class="svc-cta">Book This</a>
+      </div>
+      <div class="svc-card reveal rd1">
+        <div class="svc-n">02</div>
+        <div class="svc-t">AI Specialist</div>
+        <div class="svc-nm">AI Red Team Sprint</div>
+        <div class="svc-pw"><div class="svc-p"><span class="c">$</span>4,500</div></div>
+        <p class="svc-d">We attack your Azure AI before attackers do. PyRIT methodology. 7 days. Full findings report.</p>
+        <ul class="svc-l">
+          <li>Azure OpenAI / Copilot targeting</li>
+          <li>Prompt injection attack chains</li>
+          <li>Data exfiltration demonstration</li>
+          <li>Full AI findings report</li>
+          <li>Remediation roadmap</li>
+        </ul>
+        <a href="#book" class="svc-cta">Book This</a>
+      </div>
+      <div class="svc-card reveal rd2">
+        <div class="svc-n">03</div>
+        <div class="svc-t">Full Assessment</div>
+        <div class="svc-nm">Full AI Security Audit</div>
+        <div class="svc-pw"><div class="svc-p"><span class="c">$</span>7,500</div></div>
+        <p class="svc-d">Complete Azure + AI workload attack chains. Everything your team needs to fix it. 10 days.</p>
+        <ul class="svc-l">
+          <li>Complete Azure environment</li>
+          <li>Full AI workload attack surface</li>
+          <li>Attack chain documentation</li>
+          <li>Prioritized remediation roadmap</li>
+          <li>Kickoff + debrief calls</li>
+          <li>90-day follow-up included</li>
+        </ul>
+        <a href="#book" class="svc-cta">Book This</a>
+      </div>
+    </div>
+    <div class="pentest-b reveal">
+      <div>
+        <div class="pt-tag">// Unlocking June 2026 — Post-OSCP</div>
+        <div class="pt-nm">Full <em>Penetration Test</em> Engagement — Waitlist Open</div>
+      </div>
+      <div class="pt-r">
+        <div class="pt-p">$15K — $25K</div>
+        <div class="pt-note">Full authorized pentest. Azure environment. Real attack simulation. Join waitlist via booking form.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Findings" id="findings"></div>
+
+<!-- FINDINGS -->
+<section class="findings layer">
+  <div class="wrap">
+    <div class="sh reveal" style="margin-bottom:40px;">
+      <h2 class="big-t" style="font-size:clamp(36px,6vw,72px);">SELECTED<br><span class="gh">FINDINGS</span></h2>
+      <p class="sh-d">Attack chains on real Azure environments. Not theoretical. Executed.</p>
+    </div>
+    <div class="ft reveal">
+      <div class="fth"><span>Severity</span><span>Finding</span><span>Vector</span><span style="text-align:right">Result</span></div>
+      <div class="fr">
+        <div><span class="bd bc">CRITICAL</span></div>
+        <div class="fn"><strong>Key Vault Secret Extraction</strong>Misconfigured Service Principal used to extract full production secrets. Four-step attack chain documented end to end.</div>
+        <div class="fv">Service Principal<br>Misconfiguration</div>
+        <div class="frs">FULL CREDENTIAL<br>EXPOSURE</div>
+      </div>
+      <div class="fr">
+        <div><span class="bd bh">HIGH</span></div>
+        <div class="fn"><strong>Entra ID Privilege Escalation</strong>Standard user to Global Admin via PIM misconfiguration. No approval. Persistent backdoor created. Four steps.</div>
+        <div class="fv">PIM<br>Misconfiguration</div>
+        <div class="frs">GLOBAL ADMIN<br>IN 4 STEPS</div>
+      </div>
+      <div class="fr">
+        <div><span class="bd bh">HIGH</span></div>
+        <div class="fn"><strong>Azure OpenAI Prompt Injection → Exfiltration</strong>System prompt extracted and data exfiltration demonstrated via PyRIT. The AI attack surface most assessments miss.</div>
+        <div class="fv">PyRIT /<br>Prompt Injection</div>
+        <div class="frs">AI WORKLOAD<br>COMPROMISED</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Credentials"></div>
+
+<!-- CREDENTIALS -->
+<section class="creds layer">
+  <div class="wrap">
+    <div class="cg reveal">
+      <div class="cc">
+        <div class="cc-org">ISC2 — Certified</div>
+        <div class="cc-acr">CC</div>
+        <div class="cc-full">Certified in Cybersecurity — Security principles, risk management, network security, access controls, and incident response.</div>
+        <div class="cc-stat done">✓ Examination Passed — March 2026</div>
+      </div>
+      <div class="cc">
+        <div class="cc-org">Microsoft — Applied Skills</div>
+        <div class="cc-acr">AZ SEC</div>
+        <div class="cc-full">Secure Azure Services with Microsoft Defender for Cloud — Regulatory compliance, JIT access, Key Vault security, network protection.</div>
+        <div class="cc-stat prog">● In Progress — April 2026</div>
+      </div>
+      <div class="cc">
+        <div class="cc-org">Offensive Security</div>
+        <div class="cc-acr">OSCP</div>
+        <div class="cc-full">Offensive Security Certified Professional — The gold standard in penetration testing. 24-hour practical exam. Real attack execution.</div>
+        <div class="cc-stat up">○ Incoming — June 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Book" id="book"></div>
+
+<!-- BOOKING -->
+<section class="booking layer">
+  <div class="wrap">
+    <div class="bk-inner reveal">
+      <div class="bk-head">
+        <h2 class="bk-title">BOOK YOUR <span>ENGAGEMENT</span></h2>
+        <p class="bk-sub">Fill in your details. We confirm within 24 hours. No payment yet — just the conversation that starts everything.</p>
+      </div>
+      <div class="bk-grid">
+        <div class="bk-form">
+          <form id="bk-form">
+            <div class="fg"><label class="fl">Full Name</label><input type="text" id="f-name" class="fi" placeholder="Your name" required></div>
+            <div class="fg"><label class="fl">Company</label><input type="text" id="f-company" class="fi" placeholder="Company name" required></div>
+            <div class="fg"><label class="fl">Email</label><input type="email" id="f-email" class="fi" placeholder="your@company.com" required></div>
+            <div class="fg">
+              <label class="fl">Service Interested In</label>
+              <select id="f-service" class="fsel" required>
+                <option value="" disabled selected>Choose a service</option>
+                <option value="Void Scan — $1,500">Void Scan — $1,500</option>
+                <option value="AI Red Team Sprint — $4,500">AI Red Team Sprint — $4,500</option>
+                <option value="Full AI Security Audit — $7,500">Full AI Security Audit — $7,500</option>
+                <option value="Standard Retainer — $5,000/mo">Standard Retainer — $5,000/mo</option>
+                <option value="Premium Retainer — $8,500/mo">Premium Retainer — $8,500/mo</option>
+                <option value="Penetration Test — Waitlist">Penetration Test — Waitlist</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Your Environment</label><textarea id="f-msg" class="fta" placeholder="Azure environment details, AI workloads, main security concerns..."></textarea></div>
+            <button type="submit" class="fsub" id="f-btn">Submit Inquiry →</button>
+          </form>
+          <div class="f-ok" id="f-ok">
+            <div class="f-ok-sym">∅</div>
+            <div class="f-ok-t">Received</div>
+            <p class="f-ok-d">We'll be in touch within 24 hours to schedule your discovery call.</p>
+          </div>
+        </div>
+        <div class="bk-info">
+          <div class="bi-block">
+            <div class="bi-lbl">What Happens Next</div>
+            <div class="bi-rows">
+              <div class="bi-row"><span class="bi-k">Step 1</span><span class="bi-v w">Submit inquiry</span></div>
+              <div class="bi-row"><span class="bi-k">Step 2</span><span class="bi-v w">Confirm within 24hrs</span></div>
+              <div class="bi-row"><span class="bi-k">Step 3</span><span class="bi-v w">Discovery call — 30 min</span></div>
+              <div class="bi-row"><span class="bi-k">Step 4</span><span class="bi-v w">Scope finalized</span></div>
+              <div class="bi-row"><span class="bi-k">Step 5</span><span class="bi-v g">Payment → work begins</span></div>
+            </div>
+          </div>
+          <div class="bi-block">
+            <div class="bi-lbl">Availability</div>
+            <div class="bi-rows">
+              <div class="bi-row"><span class="bi-k">Open Slots</span><span class="bi-v g">● 2 Remaining</span></div>
+              <div class="bi-row"><span class="bi-k">Response</span><span class="bi-v w">Within 24 Hours</span></div>
+              <div class="bi-row"><span class="bi-k">Start Date</span><span class="bi-v w">Within 1 Week</span></div>
+              <div class="bi-row"><span class="bi-k">Industries</span><span class="bi-v w">Health · Fintech · Legal</span></div>
+            </div>
+          </div>
+          <div class="bi-block">
+            <div class="bi-lbl">Schedule A Call</div>
+            <a href="https://calendly.com/exorrnull/30min" target="_blank" class="btn btn-o" style="display:block;text-align:center;">Book Discovery Call →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Payment" id="pay"></div>
+
+<!-- PAYMENT -->
+<section class="payment layer">
+  <div class="wrap">
+    <div class="pay-head reveal">
+      <h2 class="pay-title">PAY <span>INSTANTLY</span></h2>
+      <p class="pay-sub">Secure crypto payments. USDT, BTC, ETH and more. Invoice generated automatically.</p>
+    </div>
+    <div class="pay-grid reveal">
+      <div class="pc">
+        <div class="pc-n">Void Scan</div>
+        <div class="pc-p"><span class="c">$</span>1,500</div>
+        <p class="pc-d">Azure + AI exposure check. Top 3 risks. 5 days.</p>
+        <a href="https://nowpayments.io/payment/?iid=5367222228" target="_blank" class="pc-btn" onclick="openInvoice('Void Scan','1,500','5367222228','Azure environment review. Top 3 critical risks. Executive summary. 30-minute debrief. 5 business days.')">Pay $1,500 →</a>
+      </div>
+      <div class="pc">
+        <div class="pc-n">AI Red Team Sprint</div>
+        <div class="pc-p"><span class="c">$</span>4,500</div>
+        <p class="pc-d">Azure AI attack simulation. PyRIT methodology. 7 days.</p>
+        <a href="https://nowpayments.io/payment/?iid=5838936572" target="_blank" class="pc-btn" onclick="openInvoice('AI Red Team Sprint','4,500','5838936572','Azure OpenAI / Copilot attack simulation using PyRIT. Prompt injection chains. Data exfiltration demonstration. Full findings report. 7 business days.')">Pay $4,500 →</a>
+      </div>
+      <div class="pc">
+        <div class="pc-n">Full AI Security Audit</div>
+        <div class="pc-p"><span class="c">$</span>7,500</div>
+        <p class="pc-d">Complete Azure + AI attack chain. 10 days.</p>
+        <a href="https://nowpayments.io/payment/?iid=5729505582" target="_blank" class="pc-btn" onclick="openInvoice('Full AI Security Audit','7,500','5729505582','Complete Azure environment. Full AI workload attack surface. Attack chain documentation. Remediation roadmap. 90-day follow-up. 10 business days.')">Pay $7,500 →</a>
+      </div>
+    </div>
+    <div class="pay-ret reveal">
+      <div class="pr">
+        <div>
+          <div class="pr-tag">Monthly · Standard</div>
+          <div class="pr-nm">Standard CISO Retainer</div>
+          <div class="pr-d">10 hours monthly. Azure security review.</div>
+        </div>
+        <div class="pr-r">
+          <span class="pr-p"><span class="c">$</span>5,000<span class="pp">/mo</span></span>
+          <a href="https://nowpayments.io/payment/?iid=4414535165" target="_blank" class="pr-btn" onclick="openInvoice('Standard CISO Retainer','5,000','4414535165','10 dedicated hours monthly. Azure security review. Monthly report. Email support. Ongoing coverage.')">Pay $5,000 →</a>
+        </div>
+      </div>
+      <div class="pr">
+        <div>
+          <div class="pr-tag">Monthly · Premium</div>
+          <div class="pr-nm">Premium CISO Retainer</div>
+          <div class="pr-d">20 hours. Azure + AI. Board reporting.</div>
+        </div>
+        <div class="pr-r">
+          <span class="pr-p"><span class="c">$</span>8,500<span class="pp">/mo</span></span>
+          <a href="https://nowpayments.io/payment/?iid=5699535457" target="_blank" class="pr-btn" onclick="openInvoice('Premium CISO Retainer','8,500','5699535457','20 dedicated hours monthly. Azure + AI coverage. Bi-weekly calls. Incident response. Board reporting quarterly.')">Pay $8,500 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="v-div layer" data-l="Contact" id="contact"></div>
+
+<!-- CONTACT -->
+<section class="contact layer">
+  <div class="contact-glow"></div>
+  <div class="wrap">
+    <div class="cg-grid">
+      <div class="reveal">
+        <div class="c-pre">Get In Touch</div>
+        <h2 class="c-title"><span class="ct1">THE</span><span class="ct2">VOID</span><span class="ct3">AWAITS</span></h2>
+        <p class="c-txt">Taking on a limited number of new clients. <strong>If you're running Azure in a regulated industry</strong> and want to know your actual exposure before someone else finds it — reach out.</p>
+        <div class="c-links">
+          <a href="mailto:exorrnull@gmail.com" class="c-link"><span class="cl-ic">Email</span><span class="cl-v">exorrnull@gmail.com</span></a>
+          <a href="https://wa.me/263717380546" class="c-link" target="_blank"><span class="cl-ic">WhatsApp</span><span class="cl-v">+263 717 380 546</span></a>
+          <a href="https://linkedin.com/company/exorr-security" class="c-link" target="_blank"><span class="cl-ic">LinkedIn</span><span class="cl-v">linkedin.com/company/exorr-security</span></a>
+          <a href="https://github.com/exorrtech" class="c-link" target="_blank"><span class="cl-ic">GitHub</span><span class="cl-v">github.com/exorrtech</span></a>
+        </div>
+      </div>
+      <div class="reveal rd1">
+        <div class="c-table">
+          <div class="c-row"><span class="ck">Status</span><span class="cv g"><span class="sdot"></span>Available Now</span></div>
+          <div class="c-row"><span class="ck">Open Slots</span><span class="cv g">2 Remaining</span></div>
+          <div class="c-row"><span class="ck">Response</span><span class="cv w">Within 24 Hours</span></div>
+          <div class="c-row"><span class="ck">Start Date</span><span class="cv w">Within 1 Week</span></div>
+          <div class="c-row"><span class="ck">Industries</span><span class="cv w">Healthcare · Fintech · Legal</span></div>
+          <div class="c-row"><span class="ck">Geography</span><span class="cv w">US · UK · Gulf</span></div>
+          <div class="c-row"><span class="ck">Entry Point</span><span class="cv g">Void Scan — $1,500</span></div>
+          <div class="c-row"><span class="ck">Retainer</span><span class="cv w">From $5,000/month</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="layer">
+  <div class="fi-inner">
+    <div class="f-logo">EXORR</div>
+    <div class="f-ph">The void has no surface to attack.</div>
+    <div class="f-cp">© 2026 — Azure · AI · Zero Compromise</div>
+  </div>
+</footer>
+
+<!-- EMAILJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- JSPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ══════════════════════════════════════════
+// CURSOR + TRAIL
+// ══════════════════════════════════════════
+const cur=document.getElementById('cur');
+const ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+const trails=[];
+for(let i=0;i<8;i++){
+  const t=document.createElement('div');
+  t.className='cur-trail';
+  document.body.appendChild(t);
+  trails.push({el:t,x:0,y:0});
+}
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx+'px';cur.style.top=my+'px';
+});
+let trailTick=0;
+(function animAll(){
+  rx+=(mx-rx)*.12;ry+=(my-ry)*.12;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  trailTick++;
+  if(trailTick%3===0){
+    const t=trails[Math.floor(trailTick/3)%trails.length];
+    t.x=mx;t.y=my;
+    t.el.style.left=mx+'px';t.el.style.top=my+'px';
+    t.el.style.opacity='.4';
+    t.el.style.transform='translate(-50%,-50%)';
+    setTimeout(()=>{t.el.style.opacity='0';},400);
+  }
+  requestAnimationFrame(animAll);
+})();
+document.querySelectorAll('a,button,.svc-card,.pc,.pr,.fr,.cc,.rec-opt').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ring.style.width='48px';ring.style.height='48px';ring.style.borderColor='rgba(0,255,65,0.5)';});
+  el.addEventListener('mouseleave',()=>{ring.style.width='32px';ring.style.height='32px';ring.style.borderColor='rgba(0,255,65,0.2)';});
+});
+
+// ══════════════════════════════════════════
+// SCROLL PROGRESS
+// ══════════════════════════════════════════
+window.addEventListener('scroll',()=>{
+  const pct=(window.scrollY/(document.body.scrollHeight-window.innerHeight))*100;
+  document.getElementById('scroll-fill').style.height=pct+'%';
+});
+
+// ══════════════════════════════════════════
+// LOADER
+// ══════════════════════════════════════════
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const l=document.getElementById('loader');
+    l.classList.add('hide');
+    setTimeout(()=>{l.style.display='none';},800);
+  },3800);
+});
+
+// ══════════════════════════════════════════
+// CANVAS — CONSTELLATION PARTICLES
+// ══════════════════════════════════════════
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+
+const pts=[];
+for(let i=0;i<100;i++){
+  pts.push({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:(Math.random()-.5)*.25,
+    vy:(Math.random()-.5)*.25,
+    r:Math.random()*1.8+.4,
+    o:Math.random()*.45+.06,
+    p:Math.random()*Math.PI*2
+  });
+}
+
+let pmx=-9999,pmy=-9999;
+document.addEventListener('mousemove',e=>{pmx=e.clientX;pmy=e.clientY;});
+
+let ftick=0;
+const VOID_PTS=[
+  {x:.5,y:.5},{x:.35,y:.35},{x:.65,y:.35},{x:.5,y:.2},
+  {x:.5,y:.8},{x:.35,y:.65},{x:.65,y:.65},
+  {x:.3,y:.5},{x:.7,y:.5},{x:.4,y:.3},{x:.6,y:.3},
+  {x:.4,y:.7},{x:.6,y:.7},{x:.5,y:.4},{x:.5,y:.6}
+];
+
+function drawVoid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ftick++;
+  const forming=ftick%700<200;
+
+  pts.forEach((a,i)=>{
+    if(forming&&i<VOID_PTS.length){
+      const tx=VOID_PTS[i].x*canvas.width;
+      const ty=VOID_PTS[i].y*canvas.height;
+      a.x+=(tx-a.x)*.025;a.y+=(ty-a.y)*.025;
+    } else {
+      const dxm=a.x-pmx,dym=a.y-pmy;
+      const dm=Math.sqrt(dxm*dxm+dym*dym);
+      if(dm<180){const f=(180-dm)/180*.6;a.vx+=(dxm/dm)*f;a.vy+=(dym/dm)*f;}
+      a.vx*=.98;a.vy*=.98;
+      a.x+=a.vx;a.y+=a.vy;
+      if(a.x<0)a.x=canvas.width;if(a.x>canvas.width)a.x=0;
+      if(a.y<0)a.y=canvas.height;if(a.y>canvas.height)a.y=0;
+    }
+    pts.slice(i+1).forEach(b=>{
+      const dx=a.x-b.x,dy=a.y-b.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<140){
+        const alpha=forming?(1-d/140)*.18:(1-d/140)*.09;
+        ctx.strokeStyle=`rgba(0,255,65,${alpha})`;
+        ctx.lineWidth=forming?.8:.4;
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+    });
+    a.p+=.018;
+    const o=Math.max(0,a.o+Math.sin(a.p)*.1+(forming?.15:0));
+    ctx.beginPath();ctx.arc(a.x,a.y,a.r+(forming?.6:0),0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,255,65,${o})`;ctx.fill();
+  });
+  requestAnimationFrame(drawVoid);
+}
+drawVoid();
+
+// ══════════════════════════════════════════
+// STAT COUNTERS
+// ══════════════════════════════════════════
+function animateCounter(el,target){
+  let current=0;
+  const step=target/40;
+  const interval=setInterval(()=>{
+    current+=step;
+    if(current>=target){current=target;clearInterval(interval);}
+    el.textContent=Math.floor(current);
+  },40);
+}
+const statObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      document.querySelectorAll('[data-target]').forEach(el=>{
+        animateCounter(el,parseFloat(el.dataset.target));
+      });
+      statObs.disconnect();
+    }
+  });
+},{threshold:.5});
+const statsBar=document.querySelector('.stats-bar');
+if(statsBar)statObs.observe(statsBar);
+
+// ══════════════════════════════════════════
+// SCROLL REVEAL
+// ══════════════════════════════════════════
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:.08});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// ══════════════════════════════════════════
+// RECOMMENDER
+// ══════════════════════════════════════════
+const ans={};
+function ra(step,val){
+  ans[step]=val;
+  document.querySelectorAll(`#rs${step} .rec-opt`).forEach(b=>b.classList.remove('sel'));
+  event.target.classList.add('sel');
+  setTimeout(()=>{
+    document.getElementById(`rs${step}`).classList.remove('active');
+    document.getElementById(`pd${step}`).classList.add('done');
+    if(step<3){
+      document.getElementById(`rs${step+1}`).classList.add('active');
+      document.getElementById(`pd${step+1}`).classList.add('active');
+    } else showRecResult();
+  },400);
+}
+const RECS={
+  scan:{name:'Void Scan',price:'$1,500',desc:'Perfect starting point. Map your Azure exposure and get the top 3 risks in 5 days. Low commitment, immediate value.'},
+  sprint:{name:'AI Red Team Sprint',price:'$4,500',desc:'Your AI workloads need testing before attackers test them for you. 7 days. Full findings report.'},
+  audit:{name:'Full AI Security Audit',price:'$7,500',desc:'Complete Azure + AI coverage. Attack chains documented. Everything your team needs to fix. 10 days.'},
+  standard:{name:'Standard CISO Retainer',price:'$5,000/month',desc:'Ongoing Azure security leadership. 10 hours monthly. The CISO you need without the full-time cost.'},
+};
+function showRecResult(){
+  const a1=ans[1],a2=ans[2],a3=ans[3];
+  let rec='scan';
+  if(a2==='yes'&&a3==='no')rec='audit';
+  else if(a2==='yes')rec='sprint';
+  else if(a1==='large'||a1==='mid')rec='standard';
+  const r=RECS[rec];
+  document.getElementById('rr-name').textContent=r.name;
+  document.getElementById('rr-price').textContent=r.price;
+  document.getElementById('rr-desc').textContent=r.desc;
+  document.getElementById('rec-res').classList.add('show');
+  document.getElementById('rs3').style.display='none';
+}
+function resetRec(){
+  Object.keys(ans).forEach(k=>delete ans[k]);
+  document.getElementById('rec-res').classList.remove('show');
+  document.querySelectorAll('.rec-step').forEach(s=>{s.classList.remove('active');s.style.display='';});
+  document.getElementById('rs1').classList.add('active');
+  document.querySelectorAll('.rp-dot').forEach((d,i)=>{d.classList.remove('done','active');if(i===0)d.classList.add('active');});
+  document.querySelectorAll('.rec-opt').forEach(b=>b.classList.remove('sel'));
+}
+
+// ══════════════════════════════════════════
+// EMAILJS
+// ══════════════════════════════════════════
+emailjs.init('LvElOhuUHeJHkt47D');
+
+// ══════════════════════════════════════════
+// BOOKING FORM
+// ══════════════════════════════════════════
+document.getElementById('bk-form').addEventListener('submit',async function(e){
+  e.preventDefault();
+  const btn=document.getElementById('f-btn');
+  btn.textContent='Sending...';btn.disabled=true;
+  const name=document.getElementById('f-name').value;
+  const company=document.getElementById('f-company').value;
+  const email=document.getElementById('f-email').value;
+  const service=document.getElementById('f-service').value;
+  const msg=document.getElementById('f-msg').value;
+  try{
+    await emailjs.send('service_kc6e2er','template_ljl9y3a',{
+      from_name:name,from_email:email,company,service,message:msg
+    });
+  }catch(err){console.log('EmailJS:',err);}
+  try{
+    await fetch('https://hooks.zapier.com/hooks/catch/26920298/upg5ibh/',{
+      method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,company,email,service,message:msg,timestamp:new Date().toISOString()})
+    });
+  }catch(err){console.log('Zapier:',err);}
+  try{
+    await fetch('https://formspree.io/f/xgonbqyq',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({name,company,email,service,message:msg})
+    });
+  }catch(err){console.log('Formspree:',err);}
+  document.getElementById('bk-form').style.display='none';
+  document.getElementById('f-ok').classList.add('show');
+});
+
+// ══════════════════════════════════════════
+// INVOICE SYSTEM
+// ══════════════════════════════════════════
+const PAY_LINKS={
+  '5367222228':'https://nowpayments.io/payment/?iid=5367222228',
+  '5838936572':'https://nowpayments.io/payment/?iid=5838936572',
+  '5729505582':'https://nowpayments.io/payment/?iid=5729505582',
+  '4414535165':'https://nowpayments.io/payment/?iid=4414535165',
+  '5699535457':'https://nowpayments.io/payment/?iid=5699535457',
+};
+let currentInv={};
+
+function openInvoice(svc,amount,iid,desc){
+  currentInv={svc,amount,iid,desc};
+  const today=new Date();
+  document.getElementById('inv-date').textContent=today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('inv-num').textContent='INV-'+Date.now().toString().slice(-6);
+  document.getElementById('inv-svc-name').textContent=svc;
+  document.getElementById('inv-svc-desc').textContent=desc;
+  document.getElementById('inv-rate').textContent='$'+amount;
+  document.getElementById('inv-amt').textContent='$'+amount;
+  document.getElementById('inv-sub').textContent='$'+amount;
+  document.getElementById('inv-total').textContent=amount;
+  document.getElementById('inv-link').textContent=PAY_LINKS[iid]||'';
+  document.getElementById('inv-wallet').textContent='Pay via link above or send USDT (TRC-20) directly — contact us for wallet address';
+  document.getElementById('inv-client').textContent=document.getElementById('f-name')?.value||'Client';
+  document.getElementById('inv-company').textContent=document.getElementById('f-company')?.value||'Company';
+  document.getElementById('inv-email').textContent=document.getElementById('f-email')?.value||'email@company.com';
+  document.getElementById('inv-modal').classList.add('show');
+}
+function closeInvoice(){document.getElementById('inv-modal').classList.remove('show');}
+document.getElementById('inv-modal').addEventListener('click',function(e){if(e.target===this)closeInvoice();});
+
+function downloadPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,H=297;
+  doc.setFillColor(5,5,5);doc.rect(0,0,W,H,'F');
+  doc.setDrawColor(0,255,65);doc.setLineWidth(.4);doc.line(20,18,W-20,18);
+  doc.setTextColor(245,245,245);doc.setFontSize(36);doc.setFont('helvetica','bold');doc.text('EXORR',20,14);
+  doc.setFillColor(0,255,65);doc.circle(75,11,1.5,'F');
+  doc.setFontSize(8);doc.setFont('courier','normal');doc.setTextColor(60,60,60);doc.text('SECURITY ADVISORY · AZURE · AI',20,20);
+  doc.setFontSize(28);doc.setFont('helvetica','bold');doc.setTextColor(30,30,30);doc.text('INVOICE',W-20,14,{align:'right'});
+  doc.setFontSize(8);doc.setFont('courier','normal');doc.setTextColor(60,60,60);
+  doc.text(`Number: ${document.getElementById('inv-num').textContent}`,W-20,22,{align:'right'});
+  doc.text(`Date: ${document.getElementById('inv-date').textContent}`,W-20,27,{align:'right'});
+  doc.text('Due: 7 Days',W-20,32,{align:'right'});
+  doc.setDrawColor(20,20,20);doc.setLineWidth(.2);doc.line(20,38,W-20,38);
+  doc.setFontSize(7);doc.setTextColor(0,255,65);doc.text('FROM',20,46);doc.text('BILL TO',110,46);
+  doc.setTextColor(220,220,220);doc.setFontSize(11);
+  doc.text('EXORR Security Advisory',20,53);
+  doc.text(document.getElementById('inv-client').textContent,110,53);
+  doc.setFontSize(8);doc.setTextColor(100,100,100);
+  doc.text('exorrnull@gmail.com',20,58);doc.text(document.getElementById('inv-company').textContent,110,58);
+  doc.text('+263 717 380 546',20,63);doc.text(document.getElementById('inv-email').textContent,110,63);
+  doc.text('exorrtech.github.io',20,68);
+  doc.setDrawColor(20,20,20);doc.line(20,74,W-20,74);
+  doc.setFontSize(7);doc.setTextColor(60,60,60);doc.text('SERVICE',20,79);doc.text('AMOUNT',W-20,79,{align:'right'});
+  doc.line(20,82,W-20,82);
+  doc.setFontSize(13);doc.setFont('helvetica','normal');doc.setTextColor(220,220,220);
+  doc.text(currentInv.svc||'Service',20,92);
+  doc.setFontSize(8);doc.setFont('courier','normal');doc.setTextColor(100,100,100);
+  const dl=doc.splitTextToSize(currentInv.desc||'',120);doc.text(dl,20,98);
+  doc.setFontSize(22);doc.setFont('helvetica','bold');doc.setTextColor(245,245,245);
+  doc.text('$'+(currentInv.amount||'0'),W-20,92,{align:'right'});
+  doc.setDrawColor(20,20,20);doc.line(20,118,W-20,118);
+  doc.setFillColor(6,6,6);doc.rect(W-72,123,52,24,'F');doc.setDrawColor(20,20,20);doc.rect(W-72,123,52,24,'S');
+  doc.setFontSize(7);doc.setTextColor(0,255,65);doc.text('TOTAL DUE',W-46,130,{align:'center'});
+  doc.setFontSize(20);doc.setFont('helvetica','bold');doc.setTextColor(245,245,245);
+  doc.text('$'+(currentInv.amount||'0'),W-46,140,{align:'center'});
+  doc.setFillColor(0,12,4);doc.rect(20,155,W-40,20,'F');doc.setDrawColor(0,40,12);doc.rect(20,155,W-40,20,'S');
+  doc.setFontSize(7);doc.setFont('courier','normal');doc.setTextColor(0,255,65);doc.text('PAYMENT — USDT TRC-20',25,162);
+  doc.setTextColor(130,130,130);
+  const lnk=PAY_LINKS[currentInv.iid]||'';doc.text(lnk,25,168);
+  doc.setFontSize(8);doc.setFont('courier','italic');doc.setTextColor(50,50,50);
+  doc.text('The void has no surface to attack. We make your infrastructure the same.',W/2,H-22,{align:'center'});
+  doc.text('exorrtech.github.io',W/2,H-16,{align:'center'});
+  doc.setDrawColor(0,255,65);doc.setLineWidth(.3);doc.line(20,H-28,W-20,H-28);
+  doc.save(`EXORR_Invoice_${(currentInv.svc||'invoice').replace(/\s/g,'_')}.pdf`);
+}
+
+// Set today's date on load
+document.addEventListener('DOMContentLoaded',()=>{
+  const d=new Date();
+  const el=document.getElementById('inv-date');
+  if(el)el.textContent=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+});
+</script>
+</body>
+</html>
